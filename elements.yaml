@@ -1,0 +1,105 @@
+# PalletizOS Home 화면 요소 이름 (UI 언어: English 고정)
+# UI 문구가 바뀌면 이 파일만 고친다. 좌표는 쓰지 않고, 이름표 기준으로 같은 열/행의 컨트롤을 찾는다.
+
+window_title: Dr.Dart-Platform
+
+# 가상 제어기 컨테이너 (없으면 러너가 이 설정으로 새로 만듦). 2026-10-20: 재부팅 후 컨테이너가 사라져 추가
+simulator:
+  image: 2ldl9mume9.execute-api.ap-northeast-2.amazonaws.com/dsg-robotics/dev-simulator:sdk7
+  env: { ROBOT_MODEL: M1013 }   # 빠지면 DRCF가 rc=139로 죽기 반복 → unhealthy
+  ports: [12345:12345, 12350:12350/udp, 12360:12360/udp, 3600:3600, 3601:3601, 502:502]
+  # 필수: DRCF는 시작 시 메모리를 RAM에 고정(mlock)하는데, 기본 한도(64MB)면 실패 후 segfault(rc=139)로 죽기를 반복한다.
+  # 2026-10-20 실측: memlock 무제한 또는 IPC_LOCK 권한 중 하나면 충돌 0회·12345 대기. 권한 추가 없이 한도만 올린다
+  ulimits: [memlock=-1]
+
+platform:
+  # 연결 전 화면은 PC 언어(한국어), 연결 후엔 제어기 설정 언어를 따른다 (실측) → 한·영 모두 받는다
+  connect_title: [제어기 IP, Controller IP]
+  refresh: [새로고침, Refresh]
+  connect: [연결, Connect]
+  sim_ip: 127.0.0.1
+  # 연결 방식: manual = '수동으로 IP 입력'을 고르고 sim_ip를 직접 입력 (2026-10-22 사용자 요청: 목록이 비어 연결 안 됨)
+  #            list   = 목록에서 sim_ip 행 선택 (제어기 방송을 받아야 목록에 뜸). manual이 실패하면 list로 한 번 더 시도
+  connect_mode: manual
+  manual_radio: [수동으로 IP 입력, Enter IP manually, Enter IP Manually, Manual input]
+  tour_skip: [건너뛰기, Skip]
+  # 앱이 비정상 종료된 뒤 다시 연결하면 뜨는 대화상자 (가상 제어기라 강제 회수해도 됨). 영문은 미확인 후보
+  takeover_title: [제어권 이전, Transfer Control, Control Transfer]
+  takeover_button: [강제 회수, Force Retrieve, Force Take Over, Take Over]
+  palletizos_login: { button: Log In, no_password: No password needed }
+  home_module: Home                    # 메인 화면 Home 모듈 버튼 이름의 시작 단어
+  palletizos_tile: PalletizOS           # Home 모듈 즐겨찾기 타일
+
+palletizos:
+  version_prefix: v                     # 좌측 상단 'v1.1.0'
+  side_labels: [Left, Right]
+  progress: Progress
+  current_layer: Current Layer
+  boxes_on_layer: Boxes on Layer
+  enable_robot: Enable Robot
+  recovery: Recovery
+  release_vacuum: Release Vacuum
+  go_home: Go To Home Position
+  tool_change: Tool Change Pose
+  test_run: Test Run
+  status_not_enabled: Robot Not Enabled
+  # 좌측 메뉴 중 P10에서 순회하지 않는 버튼 (역할 버튼은 'A Admin'/'O Operator' 형태라 패턴으로 제외)
+  nav_exclude: [Home, Recovery, Enable Robot]
+  nav_role_pattern: '^[A-Z] \w+$'
+  # 버전마다 바뀐 메뉴 이름 (코드의 이름 → 화면에서 찾을 후보). v2.0.0: Recipes → Recipe (2026-10-21 실측)
+  menu_alias: { Recipes: [Recipes, Recipe] }
+
+# 언어 사전 검사: 이 문구들이 모두 보여야 English UI로 판단
+language_anchors: [Current Layer, Boxes on Layer, Progress]
+
+# 판정에서 무시하는 문구 (사용자 지시: Safety zone error 무시)
+ignore_texts: [Safety zone error]
+
+# 입력 방식: background = UIA 명령(마우스·포커스 안 씀, 실행 중 다른 업무 가능) / mouse = 실제 마우스 클릭
+input_mode: background
+# 포커스 지킴이: 앱이 앞으로 나오면 쓰던 창으로 포커스 되돌림 (autotest/focusguard.py). 앱 비정상 종료 의심 시 false로 대조 시험
+focus_guard: true
+
+# 자동화 속도 배수: 클릭 후 대기·확인 간격을 이 값으로 나눔 (1.0=원래, 2.0=2배속). 불안정하면 1.5로
+speed: 3.0
+# 연결 단계(앱 실행·제어기 연결·제어권 회수·PalletizOS 진입·로그인) 속도. 앱이 막 뜰 때는 느리게
+speed_connect: 1.5
+
+# 실행 중 우측 상단 상태 표시창 투명도 (0.3~1.0, 낮을수록 투명)
+overlay_alpha: 0.72
+
+# 새로 뜬 문구 중 이 단어가 들어가면 '에러 팝업'으로 판정
+error_words: [error, fail, failed, exception, 오류, 실패]
+
+# 전체 클릭 점검 K01~ (autotest/flows_crawl.py, 2026-10-22): 메뉴마다 보이는 버튼·탭·토글을 한 번씩 눌러 본다
+crawl:
+  menus:                       # 칩 번호와 메뉴 이름 후보 (버전마다 이름이 다를 수 있어 후보 목록, 없으면 해당없음)
+    - { tc: K01, names: [Home] }
+    - { tc: K02, names: [Recipe, Recipes] }
+    - { tc: K03, names: [IO] }
+    - { tc: K05, names: [Settings] }
+    - { tc: K06, names: [Dashboard] }
+    - { tc: K07, names: [Robot Control, Jog +] }
+    - { tc: K08, names: [Quick Log] }
+  # K99는 위 목록에 없는 새 메뉴를 자동으로 찾아 점검
+  skip_menus: [Log]            # 전체 클릭 점검에서 빼는 메뉴 (2026-10-22 사용자 요청: K04 Log 삭제). K99도 이 메뉴는 점검 안 함
+  max_depth: 2                 # 탭·하위 메뉴를 따라 들어가는 깊이
+  max_clicks: 150              # 메뉴 하나에서 누르는 최대 횟수
+  # 누르지 않는 버튼 (이름 정규식, 대소문자 무시) — 되돌릴 수 없거나 실행·저장·시스템 변경
+  deny:
+    - '\b(delete|remove|erase)\b'
+    - '\b(import|export|backup|restore|upload|download)\b'
+    - '\b(initiali[sz]e|install|update|upgrade|reset|factory|format)\b'
+    - '\b(save|apply|confirm|ok|yes|submit|register)\b'
+    - '\b(add|create|new|copy|duplicate|clone)\b'
+    - '\b(start|run|play|resume|test run|execute)\b'
+    - '\b(log ?out|change account|exit|shut ?down|reboot|restart|power)\b'
+    - '\b(get pose|move to|teach|calibrat\w*|teamviewer|clear)\b'
+    - '^(close|recovery)$'
+    - '(삭제|저장|적용|초기화|내보내기|가져오기|실행|시작|종료|확인)'
+  allow: []                    # deny에 걸려도 누르는 것. Create Recipe는 뺌: 편집기 안까지 눌러 들어가 복귀 실패 → 앱 재시작 (2026-10-22). 편집기 열기·닫기는 R05가 확인
+  close_buttons: [Cancel, Close, No, Discard, "Don't Save", 취소, 닫기, 아니오]
+
+# 데일리 빌드 감시기 (autotest/watcher.py, 2026-10-26): GitHub 릴리스에 새 PalletizOS .dm → 설치 → 스모크 전체 실행
+watch:
+  interval_min: 30

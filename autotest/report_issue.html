@@ -1,0 +1,101 @@
+<!-- 이슈 등록 (2026-10-22): report.py가 리포트 끝에 붙인다. 리포트를 http://127.0.0.1:8781/results/… 로 열었을 때
+     issue_server를 거쳐 JIRA에 등록. FAIL 행의 '이슈 등록' 버튼 → 미리보기(제목·설명·첨부 수정) → 등록 -->
+<style>
+.jbtn{margin-top:8px;border:1px solid var(--bad);background:#fff;color:var(--bad);border-radius:8px;
+  padding:4px 12px;font:600 13px inherit;cursor:pointer}
+.jbtn:hover{background:var(--badbg)}
+.jdone{display:inline-block;margin-top:8px;font-weight:600;font-size:13px}
+#jm{position:fixed;inset:0;background:rgba(20,26,36,.45);display:none;align-items:flex-start;justify-content:center;
+  padding:40px 16px;overflow:auto;z-index:9}
+#jm .box{background:#fff;border-radius:14px;max-width:860px;width:100%;padding:20px 22px;box-shadow:0 18px 50px rgba(0,0,0,.3)}
+#jm h3{margin:0 0 4px;font-size:18px}
+#jm label.h{display:block;font-size:12.5px;color:var(--sub);margin:12px 0 4px}
+#jm input[type=text],#jm textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:14px/1.45 inherit}
+#jm textarea{font:12.5px/1.5 Consolas,monospace;height:260px}
+#jm .files div{font-size:13.5px;margin:3px 0}
+#jm .act{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+#jm .act button{border:0;border-radius:8px;padding:8px 18px;font:600 14px inherit;cursor:pointer}
+#jm .go{background:var(--bad);color:#fff}
+#jm .go:disabled{opacity:.5;cursor:wait}
+#jm .no{background:#eef0f3}
+#jm .warnbox{background:var(--warnbg);color:#7a5410;border-radius:8px;padding:8px 12px;font-size:13px;margin-top:10px}
+#jm .stat{font-size:13.5px;margin-top:10px}
+</style>
+<div id="jm"><div class="box">
+  <h3>JIRA 이슈 등록 <span class="sub" id="jt"></span></h3>
+  <div class="stat"></div><div class="dup"></div>
+  <div class="body" style="display:none">
+    <label class="h">제목</label><input type="text" id="js">
+    <label class="h">설명 (JIRA 위키 표기)</label><textarea id="jd"></textarea>
+    <label class="h">첨부 (체크한 파일만 올림)</label><div class="files"></div>
+    <div class="act"><button class="no" onclick="closeIssue()">취소</button><button class="go" onclick="submitIssue()">등록</button></div>
+  </div>
+  <div class="act tail"><button class="no" onclick="closeIssue()">닫기</button></div>
+</div></div>
+<script>
+const RUN = document.body.dataset.run;
+const M = document.getElementById('jm'), $ = s => M.querySelector(s);
+let CUR = null;
+function esc(t){ return String(t ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function markDone(tc, r){
+  const b = document.querySelector('.jbtn[data-tc="' + tc + '"]');
+  if (b) b.outerHTML = '<a class="jdone" href="' + esc(r.url) + '" target="_blank">' + esc(r.key) + ' 등록됨 ↗</a>';
+}
+async function api(path, opt){
+  const r = await fetch(path, opt);
+  const j = await r.json().catch(() => ({error: '응답 해석 실패'}));
+  if (!r.ok) throw new Error(j.error || r.status);
+  return j;
+}
+async function openIssue(tc){
+  CUR = tc; M.style.display = 'flex'; $('.body').style.display = 'none'; $('.tail').style.display = 'flex';
+  $('.dup').innerHTML = ''; $('#jt').textContent = tc; $('.stat').textContent = '초안 만드는 중…';
+  if (location.protocol === 'file:') {
+    $('.stat').innerHTML = '이슈 등록은 등록 서버 주소로 연 리포트에서만 됩니다. <a href="http://127.0.0.1:8781/results/' + RUN +
+      '/report.html">여기로 다시 열기</a> (열리지 않으면 <b>issue_server.bat</b> 실행 후 다시 클릭)';
+    return;
+  }
+  try {
+    const p = await api('/api/preview?run=' + RUN + '&tc=' + encodeURIComponent(tc));
+    if (!p.configured) {
+      $('#jt').textContent = tc + ' — 처음 한 번 JIRA 연결 설정';
+      $('.stat').innerHTML = '새로 열린 <b>PalletizOS JIRA 설정</b> 창(검은 콘솔)에서 JIRA 주소 · Atlassian 이메일 · API 토큰을 입력하세요. ' +
+        '토큰 발급: <a target="_blank" href="https://id.atlassian.com/manage-profile/security/api-tokens">Atlassian API 토큰</a><br>' +
+        '설정이 끝나면 이 창을 닫고 <b>이슈 등록</b>을 다시 누르면 바로 미리보기가 뜹니다. (토큰은 Windows 자격 증명에만 저장)';
+      return;
+    }
+    if (p.registered) {
+      markDone(tc, p.registered);
+      $('.stat').innerHTML = '이 실행에서 이미 등록함: <a target="_blank" href="' + esc(p.registered.url) + '">' + esc(p.registered.key) + '</a>';
+      return;
+    }
+    $('#jt').textContent = tc + ' → ' + p.project + ' / ' + p.issuetype;
+    $('#js').value = p.summary; $('#jd').value = p.description;
+    $('.files').innerHTML = p.files.length ? p.files.map(f =>
+      '<div><label><input type="checkbox" checked value="' + esc(f.name) + '"> <a target="_blank" href="' + esc(f.name) + '">' +
+      esc(f.name) + '</a> — ' + esc(f.what) + '</label></div>').join('') : '<div class="sub">첨부할 파일 없음</div>';
+    $('.dup').innerHTML = p.open_issues.length ? '<div class="warnbox">같은 항목으로 열려 있는 이슈가 있습니다 — 중복이 아닌지 확인하세요:<br>' +
+      p.open_issues.map(i => '<a target="_blank" href="' + esc(i.url) + '">' + esc(i.key) + '</a> ' + esc(i.summary) + ' (' + esc(i.status) + ')').join('<br>') + '</div>' : '';
+    $('.stat').textContent = '스크린샷으로 실제 화면을 확인한 뒤 등록하세요. 버튼이 화면에 보이는데 실패했다면 자동화 쪽 문제일 수 있으니 등록하지 마세요.';
+    $('.body').style.display = 'block'; $('.tail').style.display = 'none'; $('.go').disabled = false;
+  } catch (e) {
+    $('.stat').textContent = '오류: ' + e.message + ' (등록 서버가 꺼졌으면 issue_server.bat 실행)';
+  }
+}
+async function submitIssue(){
+  const files = [...M.querySelectorAll('.files input:checked')].map(x => x.value);
+  $('.go').disabled = true; $('.stat').textContent = 'JIRA에 등록 중… (첨부 업로드 포함)';
+  try {
+    const r = await api('/api/create', {method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({run: RUN, tc: CUR, summary: $('#js').value, description: $('#jd').value, files})});
+    markDone(CUR, r); $('.body').style.display = 'none'; $('.tail').style.display = 'flex';
+    $('.stat').innerHTML = '등록 완료: <a target="_blank" href="' + esc(r.url) + '">' + esc(r.key) + '</a>' +
+      (r.attach_failed.length ? '<br>첨부 실패: ' + esc(r.attach_failed.join(', ')) : '');
+  } catch (e) {
+    $('.go').disabled = false; $('.stat').textContent = '등록 실패: ' + e.message;
+  }
+}
+function closeIssue(){ M.style.display = 'none'; }
+if (location.protocol !== 'file:')
+  api('/api/registered?run=' + RUN).then(m => Object.entries(m).forEach(([tc, r]) => markDone(tc, r))).catch(() => {});
+</script>

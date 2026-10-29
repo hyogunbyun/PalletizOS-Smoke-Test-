@@ -1,0 +1,65 @@
+[Button] 'A' (18,53,64x59) en=True 
+[Button] '' (14,152,72x60) en=True 
+[Button] '' (14,219,72x59) en=True 
+[Button] '' (14,285,72x59) en=True 
+[Button] '' (14,351,72x60) en=True 
+[Button] '' (14,417,72x60) en=True 
+[Button] '' (14,505,72x60) en=True 
+[Button] '' (14,571,72x60) en=True 
+[Button] '' (18,847,64x69) en=True 
+[Button] '' (18,922,64x69) en=True 
+[Button] 'General' (118,46,323x69) en=True 
+[Button] 'Conveyor' (118,125,323x69) en=True 
+[Button] 'Pallet' (118,204,323x69) en=True 
+[Button] 'Tool' (118,283,323x69) en=True 
+[Button] 'Slipsheet' (118,362,323x69) en=True 
+[Button] 'Account' (118,441,323x69) en=True 
+[Button] 'Remote CS' (118,520,323x69) en=True 
+[Button] 'Backup & Restore' (118,599,323x69) en=True 
+[Button] '100%' (966,50,184x68) en=True 
+[Button] 'Pallet General' (1199,50,347x68) en=True 
+[Button] 'Pallet Library' (1544,50,347x68) en=True 
+[Separator] '' (1170,143,750x2) en=True 
+[Text] 'Pallet Overhang' (1199,185,224x38) en=True 
+[Edit] 'in' (1594,188,251x33) en=True val='0.00'
+[Text] 'in' (1851,189,21x31) en=True 
+[Text] 'Left Pallet Offset' (1199,281,216x38) en=True 
+[Button] '' (1822,266,69x69) en=True 
+[Text] 'X' (1225,368,19x38) en=True 
+[Edit] 'X in' (1268,370,242x33) en=True val='0.000'
+[Text] 'in' (1512,371,21x31) en=True 
+[Text] 'Y' (1575,368,18x38) en=True 
+[Edit] 'Y in' (1617,370,242x33) en=True val='0.000'
+[Text] 'in' (1862,371,20x31) en=True 
+[Text] 'Z' (1226,443,17x38) en=True 
+[Edit] 'Z in' (1268,445,242x33) en=True val='0.000'
+[Text] 'in' (1512,446,21x31) en=True 
+[Text] 'RZ' (1566,443,35x38) en=True 
+[Edit] 'RZ °' (1617,445,252x33) en=True val='0.00'
+[Text] '°' (1871,446,11x31) en=True 
+[Text] 'Right Pallet Offset' (1199,538,234x38) en=True 
+[Button] '' (1822,523,69x69) en=True 
+[Text] 'X' (1225,625,19x38) en=True 
+[Edit] 'X in' (1268,627,242x33) en=True val='0.000'
+[Text] 'in' (1512,628,21x31) en=True 
+[Text] 'Y' (1575,625,18x38) en=True 
+[Edit] 'Y in' (1617,627,242x33) en=True val='0.000'
+[Text] 'in' (1862,628,20x31) en=True 
+[Text] 'Z' (1226,701,17x38) en=True 
+[Edit] 'Z in' (1268,702,242x33) en=True val='0.000'
+[Text] 'in' (1512,703,21x31) en=True 
+[Text] 'RZ' (1566,701,35x38) en=True 
+[Edit] 'RZ °' (1617,702,252x33) en=True val='0.00'
+[Text] '°' (1871,703,11x31) en=True 
+[Separator] '' (1199,784,692x2) en=True 
+[Text] 'Remaining Boxes For Pre-Completion' (1199,816,296x75) en=True 
+[Edit] 'box' (1557,837,224x33) en=True val='0'
+[Text] 'box' (1787,838,40x31) en=True 
+[Button] '' (1852,831,39x45) en=True 
+[Text] 'Forklift Direction' (1199,920,236x38) en=True 
+[RadioButton] 'Front' (1589,924,32x32) en=True 
+[Text] 'Front' (1636,921,70x38) en=True 
+[RadioButton] 'Side' (1754,924,32x32) en=True 
+[Text] 'Side' (1801,921,56x38) en=True 
+[Button] 'Save' (1640,934,258x69) en=False 
+[Text] 'dev' (1840,28,68x55) en=True 

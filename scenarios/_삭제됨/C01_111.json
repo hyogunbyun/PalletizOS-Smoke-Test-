@@ -1,0 +1,60 @@
+{
+ "id": "C01",
+ "title": "111",
+ "desc": "녹화 시나리오 · 7단계",
+ "admin": false,
+ "recorded_role": "Operator",
+ "recorded_at": "2026-10-19 16:08:02",
+ "steps": [
+  {
+   "type": "Button",
+   "name": "Jog +",
+   "nth": 0,
+   "label": "Button 'Jog +'",
+   "action": "click"
+  },
+  {
+   "type": "Button",
+   "name": "IO",
+   "nth": 0,
+   "label": "Button 'IO'",
+   "action": "click"
+  },
+  {
+   "type": "Button",
+   "name": "Home",
+   "nth": 0,
+   "label": "Button 'Home'",
+   "action": "click"
+  },
+  {
+   "type": "Button",
+   "name": "IO",
+   "nth": 0,
+   "label": "Button 'IO'",
+   "action": "click"
+  },
+  {
+   "type": "Button",
+   "name": "Rz",
+   "nth": 0,
+   "label": "Button 'Rz'",
+   "action": "click"
+  },
+  {
+   "type": "Button",
+   "name": "Ry",
+   "nth": 0,
+   "label": "Button 'Ry'",
+   "action": "click"
+  },
+  {
+   "type": "Button",
+   "name": "Ry",
+   "nth": 0,
+   "label": "Button 'Ry'",
+   "action": "click"
+  }
+ ],
+ "expects": []
+}

@@ -1,0 +1,69 @@
+[Button] 'A' (18,53,64x59) en=True 
+[Button] '' (14,152,72x60) en=True 
+[Button] '' (14,219,72x59) en=True 
+[Button] '' (14,285,72x59) en=True 
+[Button] '' (14,351,72x60) en=True 
+[Button] '' (14,417,72x60) en=True 
+[Button] '' (14,505,72x60) en=True 
+[Button] '' (14,571,72x60) en=True 
+[Button] '' (18,847,64x69) en=True 
+[Button] '' (18,922,64x69) en=True 
+[Button] 'General' (118,46,323x69) en=True 
+[Button] 'Conveyor' (118,125,323x69) en=True 
+[Button] 'Pallet' (118,204,323x69) en=True 
+[Button] 'Tool' (118,283,323x69) en=True 
+[Button] 'Slipsheet' (118,362,323x69) en=True 
+[Button] 'Account' (118,441,323x69) en=True 
+[Button] 'Remote CS' (118,520,323x69) en=True 
+[Button] 'Backup & Restore' (118,599,323x69) en=True 
+[Text] 'Tool' (489,64,57x38) en=True 
+[Button] 'Add Tool' (704,50,184x68) en=True 
+[Button] 'menu' (894,50,69x68) en=True 
+[Text] '1' (505,152,16x38) en=True 
+[Text] '/' (520,152,12x38) en=True 
+[Text] '10' (531,152,32x38) en=True 
+[Text] 'Name' (648,151,83x38) en=True 
+[Button] 'Teaching Tool' (490,205,472x69) en=True 
+[Button] 'ToolA menu' (490,273,472x69) en=True 
+[Button] 'menu' (881,279,56x56) en=True 
+[Edit] 'ToolA' (1022,50,869x68) en=True val='ToolA'
+[Text] 'TCP' (1022,163,49x38) en=True 
+[Text] 'X' (1047,228,20x38) en=True 
+[Edit] 'X in' (1091,230,184x33) en=True val='0.000'
+[Text] 'in' (1278,231,20x31) en=True 
+[Text] 'Y' (1340,228,18x38) en=True 
+[Edit] 'Y in' (1383,230,184x33) en=True val='0.000'
+[Text] 'in' (1570,231,20x31) en=True 
+[Text] 'Z' (1632,228,17x38) en=True 
+[Edit] 'Z in' (1674,230,185x33) en=True val='9.449'
+[Text] 'in' (1862,231,20x31) en=True 
+[Text] 'RZ' (1040,304,35x38) en=True 
+[Edit] 'RZ °' (1091,305,194x33) en=True val='0.00'
+[Text] '°' (1288,306,10x31) en=True 
+[Text] 'RY' (1331,304,36x38) en=True 
+[Edit] 'RY °' (1383,305,194x33) en=True val='0.00'
+[Text] '°' (1579,306,11x31) en=True 
+[Text] 'RX' (1622,304,38x38) en=True 
+[Edit] 'RX °' (1674,305,195x33) en=True val='0.00'
+[Text] '°' (1871,306,11x31) en=True 
+[Text] 'Center of Gravity' (1022,385,219x38) en=True 
+[Text] 'X' (1047,451,20x38) en=True 
+[Edit] 'X in' (1091,452,184x33) en=True val='0.00'
+[Text] 'in' (1278,453,20x31) en=True 
+[Text] 'Y' (1340,451,18x38) en=True 
+[Edit] 'Y in' (1383,452,184x33) en=True val='0.00'
+[Text] 'in' (1570,453,20x31) en=True 
+[Text] 'Z' (1632,451,17x38) en=True 
+[Edit] 'Z in' (1674,452,185x33) en=True val='0.00'
+[Text] 'in' (1862,453,20x31) en=True 
+[Text] 'Tool Weight' (1022,547,153x38) en=True 
+[Edit] 'lbs' (1671,550,164x33) en=True val='0.00'
+[Text] 'lbs' (1841,551,31x31) en=True 
+[Text] 'Tool Shape' (1022,644,142x38) en=True 
+[Text] 'Not Defined' (1651,644,157x38) en=True 
+[Button] '' (1822,629,69x69) en=True 
+[Text] 'Vacuum Zones' (1022,741,190x38) en=True 
+[Button] '2' (1660,727,230x68) en=True 
+[Button] 'Set Tool' (1376,934,258x69) en=True 
+[Button] 'Save' (1640,934,258x69) en=False 
+[Text] 'dev' (1840,28,68x55) en=True 

@@ -1,0 +1,279 @@
+<!-- ═══════════════════ PAGE 1 ─ 프로세스 ═══════════════════ -->
+<div class="page">
+  <div class="hd">
+    <div class="l">
+      <h1>PalletizOS <em>스모크 자동화</em> 소개</h1>
+      <p>데일리 빌드가 릴리스되면 CI/CD와 연계해 자동 설치하고 무인 스모크 테스트(42개, 실측 76분)를 돌려, PASS일 때만 매뉴얼 테스트로 넘어갑니다</p>
+    </div>
+    <div class="r">
+      작성 <b>2026-10-26</b> · QVE<br>
+      대상 <b>Dr.Dart-Platform 3.7.0 · PalletizOS v2.0.0</b> (가상 제어기 전용)<br>
+      위치 <b>D:\hyogun.byun\Desktop\log\dart_autotest</b> · 상세 <b>MANUAL.md</b>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="row">
+
+      <!-- ① -->
+      <div class="card">
+        <div class="ch"><div class="no">1</div><h2>평가 프로세스 <span>— 스모크 테스트 → PASS → 매뉴얼 테스트</span></h2><div class="tag">PROCESS</div></div>
+        <div class="cb">
+          <svg viewBox="0 0 1480 352" width="100%" style="flex:1 1 0;min-height:0" font-family="NotoKR,'맑은 고딕',sans-serif">
+            <defs>
+              <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1B3A5C"/></marker>
+              <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8C9AAC"/></marker>
+              <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2A6E51"/></marker>
+            </defs>
+            <g fill="#14243A">
+              <!-- 본선 -->
+              <rect x="10" y="6" width="205" height="92" rx="10" fill="#FDF2EA" stroke="#C25610" stroke-width="1.8"/>
+              <text x="112" y="29" text-anchor="middle" font-weight="900" font-size="15">① CI 빌드 → CT 자동 설치</text>
+              <text x="112" y="49" text-anchor="middle" font-size="11.3" fill="#37485E">GitHub 릴리스(데일리 빌드)</text>
+              <text x="112" y="66" text-anchor="middle" font-size="11.3" fill="#37485E">30분마다 감지 · 새 버전만</text>
+              <text x="112" y="83" text-anchor="middle" font-size="11.3" fill="#37485E">.dm 다운로드 → 자동 설치</text>
+              <text x="120" y="118" font-size="10.5" fill="#C25610">수동 설치 없음 · 감시기 상시 실행</text>
+              <line x1="215" y1="52" x2="243" y2="52" stroke="#1B3A5C" stroke-width="1.8" marker-end="url(#a1)"/>
+
+              <rect x="245" y="10" width="260" height="84" rx="10" fill="#1B3A5C"/>
+              <text x="375" y="42" text-anchor="middle" font-weight="900" font-size="18" fill="#fff">② 스모크 자동 테스트</text>
+              <text x="375" y="66" text-anchor="middle" font-size="12.5" fill="#C9D6E4">run_smoke.bat · 무인 실측 76분</text>
+              <text x="375" y="84" text-anchor="middle" font-size="12.5" fill="#C9D6E4">기본 30 + 전체 클릭 8 + 녹화 4</text>
+              <line x1="505" y1="52" x2="533" y2="52" stroke="#1B3A5C" stroke-width="1.8" marker-end="url(#a1)"/>
+
+              <rect x="535" y="16" width="150" height="72" rx="36" fill="#FDF2EA" stroke="#C25610" stroke-width="2"/>
+              <text x="610" y="47" text-anchor="middle" font-weight="900" font-size="17">전체 판정</text>
+              <text x="610" y="68" text-anchor="middle" font-size="12" fill="#C25610">리포트 자동 생성</text>
+
+              <line x1="685" y1="52" x2="773" y2="52" stroke="#2A6E51" stroke-width="2.4" marker-end="url(#a3)"/>
+              <text x="729" y="40" text-anchor="middle" font-size="13.5" font-weight="900" fill="#2A6E51">PASS</text>
+              <text x="729" y="72" text-anchor="middle" font-size="11" fill="#2A6E51">통과 · 통과(주의)</text>
+
+              <rect x="775" y="10" width="270" height="84" rx="10" fill="#2A6E51"/>
+              <text x="910" y="42" text-anchor="middle" font-weight="900" font-size="18" fill="#fff">③ 매뉴얼 테스트</text>
+              <text x="910" y="66" text-anchor="middle" font-size="12.5" fill="#D8F0C9">TC 수행 · 탐색 테스트</text>
+              <text x="910" y="84" text-anchor="middle" font-size="12.5" fill="#D8F0C9">스모크가 못 보는 영역 집중</text>
+              <line x1="1045" y1="52" x2="1073" y2="52" stroke="#1B3A5C" stroke-width="1.8" marker-end="url(#a1)"/>
+
+              <rect x="1075" y="14" width="190" height="76" rx="10" fill="#F4F7FA" stroke="#1B3A5C" stroke-width="1.6"/>
+              <text x="1170" y="44" text-anchor="middle" font-weight="900" font-size="17">④ 결과 보고</text>
+              <text x="1170" y="68" text-anchor="middle" font-size="12.5" fill="#68788E">출시 판정</text>
+
+              <text x="910" y="118" text-anchor="middle" font-size="12" fill="#C25610">통과(주의)는 새 로그 에러를 먼저 확인한 뒤 진행</text>
+
+              <!-- 분기: 판정 아래 -->
+              <line x1="610" y1="88" x2="610" y2="168" stroke="#A0231C" stroke-width="2" marker-end="url(#a1)"/>
+              <text x="602" y="160" text-anchor="end" font-size="13" font-weight="900" fill="#A0231C">보류 (FAIL)</text>
+              <path d="M610,146 H1015 V168" fill="none" stroke="#1B3A5C" stroke-width="1.8" marker-end="url(#a1)"/>
+              <text x="1026" y="166" font-size="13" font-weight="900" fill="#2F6FD6">재실행 필요 (환경 오류)</text>
+
+              <rect x="440" y="170" width="340" height="66" rx="10" fill="#FCEDEB" stroke="#A0231C" stroke-width="1.6"/>
+              <text x="610" y="197" text-anchor="middle" font-weight="900" font-size="15.5">FAIL 분석</text>
+              <text x="610" y="220" text-anchor="middle" font-size="12.3" fill="#68788E">실패 메시지 → 스크린샷 → UI 트리 확인</text>
+
+              <path d="M610,236 V256 M430,256 H800 M430,256 V278 M800,256 V278" fill="none" stroke="#1B3A5C" stroke-width="1.6"/>
+              <text x="425" y="250" text-anchor="end" font-size="12" font-weight="500" fill="#A0231C">제품 결함</text>
+              <text x="806" y="250" font-size="12" font-weight="500" fill="#68788E">화면 변경 · 자동화 한계</text>
+
+              <rect x="300" y="280" width="260" height="62" rx="10" fill="#A0231C"/>
+              <text x="430" y="306" text-anchor="middle" font-weight="900" font-size="15" fill="#fff">이슈 등록 → 수정 빌드</text>
+              <text x="430" y="328" text-anchor="middle" font-size="12" fill="#F3C4BF">수정 빌드 릴리스 → ①부터 자동</text>
+
+              <rect x="660" y="280" width="290" height="62" rx="10" fill="#F4F7FA" stroke="#1B3A5C" stroke-width="1.4"/>
+              <text x="805" y="306" text-anchor="middle" font-weight="900" font-size="15">자동화 갱신</text>
+              <text x="805" y="328" text-anchor="middle" font-size="12" fill="#68788E">elements.yaml · 흐름 수정 · 재녹화 → ②부터</text>
+
+              <rect x="870" y="170" width="290" height="66" rx="10" fill="#EAF1FB" stroke="#2F6FD6" stroke-width="1.6"/>
+              <text x="1015" y="197" text-anchor="middle" font-weight="900" font-size="15.5">환경 조치</text>
+              <text x="1015" y="220" text-anchor="middle" font-size="12.3" fill="#68788E">시뮬레이터 · Admin 비밀번호 · 앱 연결 → ②부터</text>
+
+              <!-- 되돌아가는 선 -->
+              <path d="M300,311 H112 V100" fill="none" stroke="#8C9AAC" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#a2)"/>
+              <path d="M950,311 H1180 V128 H400 V96" fill="none" stroke="#8C9AAC" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#a2)"/>
+              <path d="M1160,203 H1180" fill="none" stroke="#8C9AAC" stroke-width="1.6" stroke-dasharray="6 4"/>
+              <text x="150" y="304" font-size="12" fill="#8C9AAC">수정 빌드 릴리스</text>
+              <text x="1188" y="230" font-size="12" fill="#8C9AAC">스모크 재실행</text>
+
+              <!-- 오른쪽 기준 수치 -->
+              <rect x="1285" y="10" width="190" height="332" rx="10" fill="#F4F7FA" stroke="#DCE2EA"/>
+              <text x="1300" y="36" font-size="11" fill="#8C9AAC" font-weight="500" letter-spacing="1.3">기준 실측 (10-26, v2.0.0)</text>
+              <text x="1300" y="76" font-size="30" font-weight="900" fill="#1B3A5C">42<tspan font-size="14" font-weight="400" fill="#68788E"> 항목</tspan></text>
+              <text x="1300" y="118" font-size="30" font-weight="900" fill="#1B3A5C">76<tspan font-size="14" font-weight="400" fill="#68788E"> 분 · 무인</tspan></text>
+              <text x="1300" y="160" font-size="30" font-weight="900" fill="#2A6E51">29<tspan font-size="14" font-weight="400" fill="#68788E"> PASS (주의 1)</tspan></text>
+              <text x="1300" y="202" font-size="30" font-weight="900" fill="#A0231C">6<tspan font-size="14" font-weight="400" fill="#68788E"> FAIL · N/A 7</tspan></text>
+              <line x1="1300" y1="222" x2="1460" y2="222" stroke="#DCE2EA"/>
+              <text x="1300" y="246" font-size="12.5">시간 구성: 기본 30개 5분</text>
+              <text x="1300" y="266" font-size="12.5">전체 클릭 62분 · 녹화 1분</text>
+              <text x="1300" y="286" font-size="12.5">준비·복구 8분</text>
+              <text x="1300" y="312" font-size="12.5">실행 중 다른 업무 가능</text>
+              <text x="1300" y="332" font-size="12.5">(마우스 안 씀)</text>
+            </g>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+
+      <!-- ② -->
+      <div class="card">
+        <div class="ch"><div class="no">2</div><h2>왜 스모크 테스트부터 <span>— 관문(Gate) 역할</span></h2><div class="tag">WHY</div></div>
+        <div class="cb">
+          <div class="box o"><div class="lead">스모크 테스트 = <b>"이 빌드가 매뉴얼 테스트를 시작할 만큼 기본이 살아 있는가"</b>를 사람 대신 빠르게 확인하는 단계</div></div>
+          <div class="g9"></div>
+          <div class="li"><div class="b">1</div><div class="txt"><b>깨진 빌드에 매뉴얼 공수를 쓰지 않음</b> — 메뉴가 안 열리거나 값이 틀리면 앞쪽 기본 항목(30개, 항목 합계 약 5분)에서 바로 드러납니다. 매뉴얼 테스트를 몇 시간 하다 발견하는 일을 막습니다.</div></div>
+          <div class="g7"></div>
+          <div class="li"><div class="b">2</div><div class="txt"><b>매번 같은 기준</b> — 같은 42개 항목, 같은 판정 규칙. 사람마다·날마다 확인 범위가 달라지지 않습니다.</div></div>
+          <div class="g7"></div>
+          <div class="li"><div class="b">3</div><div class="txt"><b>증거가 남음</b> — 항목별 결과·실패 메시지·스크린샷·화면 구조가 리포트로 자동 저장되고, 버전별 이력이 쌓입니다.</div></div>
+          <div class="g7"></div>
+          <div class="li"><div class="b">4</div><div class="txt"><b>사람은 어려운 쪽에 집중</b> — 반복 확인은 자동화가, 사양 확인·예외 상황·사용성은 매뉴얼 테스트가 맡습니다.</div></div>
+          <div class="sp"></div>
+          <div class="dstrip"><span class="lbl">한계도 분명히</span>스모크는 <b>넓고 얕게</b> 봅니다. PASS가 "결함 없음"을 뜻하지 않으며, <b>매뉴얼 테스트를 대신하지 않습니다</b>.</div>
+        </div>
+      </div>
+
+      <!-- ③ -->
+      <div class="card">
+        <div class="ch"><div class="no">3</div><h2>무엇을 확인하나 <span>— 42개 = 기본 30 + 전체 클릭 8 + 녹화 4</span></h2><div class="tag">SCOPE</div></div>
+        <div class="cb">
+          <table>
+            <colgroup><col style="width:22%"><col style="width:6%"><col style="width:72%"></colgroup>
+            <tr><th>메뉴</th><th class="c">수</th><th>확인 내용</th></tr>
+            <tr><td><b>Home</b> H01~H08</td><td class="c">8</td><td>화면 진입·버전 · Left/Right 토글 · 레시피 선택 · 층/박스 +/− · 3D 확대 · Enable/Disable · Release Vacuum·홈 이동</td></tr>
+            <tr class="alt"><td><b>Recipe</b> R01~R05</td><td class="c">5</td><td>목록·In Use · 행 선택 → 정보 패널 · 검색 · ⋮ 메뉴 · Create Recipe 편집기</td></tr>
+            <tr><td><b>IO</b> I01~I04</td><td class="c">4</td><td>탭 5개 · Digital Output 테스트 · Flange 출력 · Modbus 상태</td></tr>
+            <tr class="alt"><td><b>Log</b> L01~L05</td><td class="c">5</td><td>최신 줄 = 앱 로그 파일 · 검색 · 정렬 · 레벨 필터 · 페이지</td></tr>
+            <tr><td><b>Settings</b> S01~S05</td><td class="c">5</td><td>General 정보 · 미저장 변경 감지 · 하위 메뉴 8개 · Tool · Account</td></tr>
+            <tr class="alt"><td><b>기타</b> J01·Q01·V01</td><td class="c">3</td><td>Jog + · Quick Log 패널(v2.0.0엔 메뉴 없음 → 해당없음) · Recovery 진입·복귀</td></tr>
+            <tr><td><b>전체 클릭</b> K01~K99</td><td class="c">8</td><td>Home·Recipe·IO·Settings·Dashboard·Robot Control·Quick Log·새 메뉴 — 보이는 버튼·탭·토글을 한 번씩 (Log 제외)</td></tr>
+            <tr class="alt"><td><b>녹화</b> C01~C04</td><td class="c">4</td><td>사람이 눌러 보인 순서를 녹화해 추가 (코드 작성 불필요)</td></tr>
+          </table>
+          <div class="sp"></div>
+          <div class="two">
+            <div class="box"><span class="lbl">확인 방법</span><div class="g3"></div><div class="tiny">누른 뒤 화면 값 계산 · 다른 화면과 일치 · 앱 로그 기록 · 에러 문구 없음</div></div>
+            <div class="box r"><span class="lbl rd">누르지 않는 것</span><div class="g3"></div><div class="tiny">Delete · Import · Export · Initialize · Install · Test Run · Save 등 되돌릴 수 없는 버튼</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pf"><span><b>PalletizOS 스모크 자동화</b> · 소개 자료</span><span>1 / 2</span></div>
+</div>
+
+
+<!-- ═══════════════════ PAGE 2 ─ 동작·사용·판정·현황 ═══════════════════ -->
+<div class="page">
+  <div class="hd">
+    <div class="l">
+      <h1>어떻게 동작하고 · <em>어떻게 쓰나</em></h1>
+      <p>구성과 동작 원리, 실행 방법과 화면, 판정 결과에 따른 다음 단계, 현재 상태와 주의사항</p>
+    </div>
+    <div class="r">
+      판정 기준 상세 <b>이 문서 3~4쪽</b><br>
+      시나리오 생성 <b>PalletizOS_스모크_시나리오생성방법_261021.pdf</b><br>
+      분석·개선용 묶음 <b>handoff\PalletizOS_Smoke_Handoff_20261019</b>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="row">
+
+      <!-- ④ -->
+      <div class="card">
+        <div class="ch"><div class="no">4</div><h2>구성과 동작 원리</h2><div class="tag">HOW IT WORKS</div></div>
+        <div class="cb">
+          <div class="flow">
+            <div class="step"><div class="n">1 · 준비</div><div class="t"><b>가상 제어기</b> 시뮬레이터(Docker) 자동 기동</div></div>
+            <div class="step"><div class="n">2 · 연결</div><div class="t">Dr.Dart 앱 실행 → 제어기 연결 → <b>PalletizOS</b> 진입</div></div>
+            <div class="step"><div class="n">3 · 항목</div><div class="t">항목마다 실행 → 판정 → <b>원상복구</b></div></div>
+            <div class="step o"><div class="n">4 · 결과</div><div class="t">HTML 리포트 · 이력 · 시작 계정 복귀</div></div>
+          </div>
+          <div class="g9"></div>
+          <table>
+            <colgroup><col style="width:27%"><col style="width:73%"></colgroup>
+            <tr><th>특징</th><th>내용</th></tr>
+            <tr><td><b>백그라운드 방식</b></td><td>마우스·키보드를 쓰지 않고 Windows 접근성 정보(UIA)로 버튼을 찾아 누름 → <b>실행 중 다른 업무 가능</b></td></tr>
+            <tr class="alt"><td><b>좌표가 아닌 객체</b></td><td>버튼 이름·종류로 찾음 → 창 크기·해상도가 달라도 동작, 값은 글자로 읽어 비교</td></tr>
+            <tr><td><b>재시도 1회</b></td><td>실패하면 원래대로 되돌린 뒤 한 번 더 → 일시적 지연으로 FAIL 나지 않음</td></tr>
+            <tr class="alt"><td><b>원상복구</b></td><td>바꾼 값(토글·레시피·층/박스·Enable·계정)을 항목마다 시작 상태로 되돌림</td></tr>
+            <tr><td><b>로그 감시</b></td><td>앱 로그에 처음 보는 종류의 에러 → "주의" · 멈춤·앱 재시작 원인은 <code>events.log</code>에 기록</td></tr>
+            <tr class="alt"><td><b>FAIL → JIRA</b></td><td>리포트의 <b>이슈 등록</b> → 미리보기 → TER 버그 (스크린샷·앱 로그 첨부)</td></tr>
+            <tr><td><b>CI/CD 연계</b></td><td>GitHub 릴리스 감시 → 설치된 버전보다 높으면 다운로드 → <b>Install from File</b> 자동 설치 → 스모크</td></tr>
+          </table>
+          <div class="sp"></div>
+          <div class="tiny">Python + pywinauto(UIA) · 화면 문구는 <code>elements.yaml</code> 한 곳 · Admin 비밀번호는 Windows 자격 증명에만 저장 (파일·로그에 남기지 않음)</div>
+        </div>
+      </div>
+
+      <!-- ⑤ -->
+      <div class="card">
+        <div class="ch"><div class="no">5</div><h2>실행 방법 <span>— 바탕화면 아이콘 3개</span></h2><div class="tag">HOW TO RUN</div></div>
+        <div class="cb">
+          <table>
+            <colgroup><col style="width:34%"><col style="width:66%"></colgroup>
+            <tr><th>파일</th><th>용도</th></tr>
+            <tr><td><code>PalletizOS_smoke.bat</code></td><td><b>스모크 테스트 실행</b> — 설치한 버전 입력(엔터=생략) 후 무인 진행, 끝나면 리포트가 열림</td></tr>
+            <tr class="alt"><td><code>PalletizOS_record.bat</code></td><td>시나리오 <b>녹화</b> — 앱에서 직접 눌러 새 항목 추가</td></tr>
+            <tr><td><code>PalletizOS_scenarios.bat</code></td><td>녹화 시나리오 <b>편집·삭제·하나만 실행</b></td></tr>
+          </table>
+          <div class="g9"></div>
+          <div class="lbl">실행 중 화면 — 앱 오른쪽 위 상태 표시창</div><div class="g4"></div>
+          <div class="li"><div class="b">1</div><div class="txt">배지 <b>ING</b> → 항목이 끝날 때마다 <b class="gn">PASS</b>·<b class="rd">FAIL</b> 1초 표시, 제목 줄에 누적 집계</div></div>
+          <div class="g3"></div>
+          <div class="li"><div class="b">2</div><div class="txt">칩 색 = 결과 (많으면 오래된 칩부터 숨김) · <b>칩을 두 번 누르면 그 항목만 바로 다시 실행</b></div></div>
+          <div class="g3"></div>
+          <div class="li"><div class="b">3</div><div class="txt"><b>■ 자동화 종료</b>(0.6~3초 사이 두 번) = 원래 상태로 되돌린 뒤 멈춤 · 끝나면 리포트를 열고 콘솔은 15초 뒤 자동 종료</div></div>
+          <div class="sp"></div>
+          <div class="box"><span class="lbl">처음 한 번만</span><div class="g3"></div><div class="tiny">Dr.Dart-Platform 설치 · Rancher Desktop(Docker) 실행 · <code>setup.bat</code>으로 Python 환경 생성 · 첫 실행 때 Admin 비밀번호 입력(이후 자동) · JIRA 등록은 <code>jira_setup.bat</code> · 자동 설치는 <code>github_setup.bat</code>(읽기 전용 토큰, 감시기는 로그온 때 자동 시작)</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+
+      <!-- ⑥ -->
+      <div class="card">
+        <div class="ch"><div class="no">6</div><h2>판정 결과 → <em>다음 단계</em></h2><div class="tag">DECISION</div></div>
+        <div class="cb">
+          <table>
+            <colgroup><col style="width:21%"><col style="width:35%"><col style="width:44%"></colgroup>
+            <tr><th>전체 판정</th><th>뜻</th><th>다음 단계</th></tr>
+            <tr><td><span class="chip g">통과</span></td><td>모든 항목 PASS (또는 해당없음)</td><td><b class="gn">매뉴얼 테스트 시작</b></td></tr>
+            <tr class="alt"><td><span class="chip o">통과(주의)</span></td><td>화면은 정상, 새 로그 에러 또는 재시도 후 통과</td><td>리포트의 로그 줄 확인 → 소음이면 승인(<code>approve_errors.bat</code>) → <b class="gn">매뉴얼 테스트 시작</b></td></tr>
+            <tr><td><span class="chip r">보류</span></td><td>FAIL 1개 이상</td><td>FAIL 분석 → <b class="rd">제품 결함이면 이슈 등록</b>, 매뉴얼 테스트 보류 · 화면 변경이면 자동화 갱신 후 재실행</td></tr>
+            <tr class="alt"><td><span class="chip">재실행 필요</span></td><td>환경 오류로 일부 항목 확인 못 함</td><td>환경 조치 후 스모크 재실행 (결함 아님)</td></tr>
+            <tr><td><span class="chip">중단</span></td><td>사용자가 종료함</td><td>다시 실행</td></tr>
+          </table>
+          <div class="g9"></div>
+          <div class="box"><span class="lbl">항목 하나의 판정</span><div class="g3"></div><div class="tiny"><b>PASS</b> = 화면 값이 기대대로 바뀌고, 로그가 남고, 에러 문구가 없음 · <b>FAIL</b> = 되돌린 뒤 한 번 더 해도 어긋남 · 해당없음 = 컨트롤이 원래 없음 · 환경 오류 = 실행 조건 문제</div></div>
+          <div class="sp"></div>
+          <div class="dstrip"><span class="lbl">FAIL 분석 요령</span>스크린샷에 해당 버튼이 <b>보이는데</b> 실패했다면 자동화 쪽 문제일 가능성 → <code>--mode mouse</code>로 다시 돌려 비교</div>
+        </div>
+      </div>
+
+      <!-- ⑦ -->
+      <div class="card">
+        <div class="ch"><div class="no">7</div><h2>현재 상태 · 한계 · <em>주의사항</em></h2><div class="tag">STATUS</div></div>
+        <div class="cb">
+          <table>
+            <colgroup><col style="width:24%"><col style="width:76%"></colgroup>
+            <tr><th>실행</th><th>결과</th></tr>
+            <tr><td><b>10-19</b> v1.1.0<br><span class="tiny">31항목 · 13분</span></td><td><b class="gn">29 PASS</b> / <b class="rd">2 FAIL</b> — H06·R04는 백그라운드에서 드롭다운·⋮ 메뉴가 안 열리는 <b>자동화 쪽 한계</b></td></tr>
+            <tr class="alt"><td><b>10-26</b> v2.0.0<br><span class="tiny">42항목 · 76분</span></td><td><b class="gn">28 PASS</b> · 주의 1 · 해당없음 7 · <b class="rd">6 FAIL</b> — H06·R04 자동화 한계 / K05 실행기 오류(하위 메뉴 중복 진입, 수정) / C01·C02·C04 녹화가 v2.0.0 화면과 안 맞음(재녹화 필요). 전체 클릭 276번 눌러 에러 문구·앱 종료 0건</td></tr>
+          </table>
+          <div class="g9"></div>
+          <div class="two">
+            <div class="box o"><span class="lbl or">알려진 한계</span><div class="g3"></div><div class="tiny">· 사양서가 아닌 실제 화면 기준 → 사양과 다른 구현은 못 잡음<br>· 3D 뷰 그림·디자인·성능은 판정 안 함<br>· 녹화 시나리오는 "확인 문구"를 골라야 제대로 판정, 화면이 바뀌면 재녹화<br>· H03~H05는 Left/Right 중 한쪽이 켜져 있어야 확인됨</div></div>
+            <div class="box r"><span class="lbl rd">반드시 지킬 것</span><div class="g3"></div><div class="tiny">· <b>가상 제어기에서만</b> (실제 로봇 연결 금지)<br>· 실행 중 <b>앱 창 최소화 금지</b>, 앱 직접 조작 금지 (다른 프로그램은 OK)<br>· "Safety zone error" 배너는 판정 제외 (시뮬레이터 설정 탓)</div></div>
+          </div>
+          <div class="sp"></div>
+          <div class="tiny">분석·개선을 이어서 할 사람은 인수인계 묶음(<code>handoff\PalletizOS_Smoke_Handoff_20261019</code>)의 README → FINDINGS → ANALYSIS_GUIDE 순서로 보면 됩니다. Claude로 바로 작업할 수 있게 CLAUDE.md가 들어 있습니다.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pf"><span><b>PalletizOS 스모크 자동화</b> · 소개 자료</span><span>2 / 2</span></div>
+</div>

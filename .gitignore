@@ -1,0 +1,18 @@
+# 환경·실행 산출물 (업로드 제외)
+.venv/
+__pycache__/
+*.pyc
+results/
+releases/
+*.dm
+
+# 영상 산출물 (생성 스크립트만 올림)
+video/frames/
+video/assets/
+video/intro_assets/
+*.mp4
+*.wav
+
+# 비밀값은 Windows 자격 증명에만 둔다 — 혹시 생기는 로컬 파일도 제외
+*.secret
+.env

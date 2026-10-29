@@ -1,0 +1,111 @@
+[Button] 'A' (18,53,64x59) en=True 
+[Button] '' (14,152,72x60) en=True 
+[Button] '' (14,219,72x59) en=True 
+[Button] '' (14,285,72x59) en=True 
+[Button] '' (14,351,72x60) en=True 
+[Button] '' (14,417,72x60) en=True 
+[Button] '' (14,505,72x60) en=True 
+[Button] '' (14,571,72x60) en=True 
+[Button] '' (18,847,64x69) en=True 
+[Button] '' (18,922,64x69) en=True 
+[Button] 'General' (118,46,323x69) en=True 
+[Button] 'Conveyor' (118,125,323x69) en=True 
+[Button] 'Pallet' (118,204,323x69) en=True 
+[Button] 'Tool' (118,283,323x69) en=True 
+[Button] 'Slipsheet' (118,362,323x69) en=True 
+[Button] 'Account' (118,441,323x69) en=True 
+[Button] 'Remote CS' (118,520,323x69) en=True 
+[Button] 'Backup & Restore' (118,599,323x69) en=True 
+[Button] '100%' (966,50,184x68) en=True 
+[Text] 'Slipsheet' (1199,54,127x37) en=True 
+[CheckBox] '' (1829,73,62x18) en=True 
+[Text] 'Type' (1199,143,62x38) en=True 
+[RadioButton] 'Paper' (1491,146,32x32) en=True 
+[Text] 'Paper' (1539,143,77x38) en=True 
+[RadioButton] 'Cardboard' (1705,146,32x32) en=True 
+[Text] 'Cardboard' (1753,143,138x38) en=True 
+[Text] 'Thickness' (1199,221,127x38) en=True 
+[Edit] 'in' (1564,224,281x33) en=True val='0.10'
+[Text] 'in' (1851,224,21x31) en=True 
+[Separator] '' (1199,299,692x2) en=True 
+[Text] 'Pick Position' (1199,326,177x38) en=True 
+[Text] 'Pick Position' (1217,389,165x38) en=True 
+[Button] 'Get Pose' (1623,374,193x69) en=True 
+[Button] '' (1822,374,69x69) en=True 
+[Text] 'X' (1243,469,19x38) en=True 
+[Edit] 'X in' (1286,471,233x33) en=True val='-8.185'
+[Text] 'in' (1521,472,21x31) en=True 
+[Text] 'RZ' (1575,469,35x38) en=True 
+[Edit] 'RZ °' (1626,471,243x33) en=True val='90.00'
+[Text] '°' (1871,472,11x31) en=True 
+[Text] 'Y' (1244,545,18x38) en=True 
+[Edit] 'Y in' (1286,546,233x33) en=True val='-65.000'
+[Text] 'in' (1521,547,21x31) en=True 
+[Text] 'RY' (1575,545,36x38) en=True 
+[Edit] 'RY °' (1626,546,243x33) en=True val='-145.00'
+[Text] '°' (1871,547,11x31) en=True 
+[Text] 'Z' (1244,620,17x38) en=True 
+[Edit] 'Z in' (1286,622,233x33) en=True val='10.000'
+[Text] 'in' (1521,623,21x31) en=True 
+[Text] 'RX' (1574,620,38x38) en=True 
+[Edit] 'RX °' (1626,622,243x33) en=True val='0.00'
+[Text] '°' (1871,623,11x31) en=True 
+[Text] 'Place Position' (1199,694,193x38) en=True 
+[Text] 'Left Pallet Offset' (1217,757,216x38) en=True 
+[Button] 'Mirror R' (1217,817,338x69) en=True 
+[Button] 'Reset' (1217,892,338x69) en=True 
+[Text] 'X' (1590,758,20x38) en=True 
+[Edit] 'X in' (1634,760,225x33) en=True val='0.000'
+[Text] 'in' (1862,761,20x31) en=True 
+[Text] 'Y' (1591,833,18x38) en=True 
+[Edit] 'Y in' (1634,835,225x33) en=True val='0.000'
+[Text] 'in' (1862,836,20x31) en=True 
+[Text] 'RZ' (1583,909,35x38) en=True 
+[Edit] 'RZ °' (1634,910,235x33) en=True val='0.00'
+[Text] '°' (1871,911,11x31) en=True 
+[Text] 'Right Pallet Offset' (1217,986,235x38) en=True 
+[Button] 'Mirror L' (1217,1047,338x69) en=True 
+[Button] 'Reset' (1217,1122,338x69) en=True 
+[Text] 'X' (1590,988,20x38) en=True 
+[Edit] 'X in' (1634,989,225x33) en=True val='0.000'
+[Text] 'in' (1862,990,20x31) en=True 
+[Text] 'Y' (1591,1063,18x38) en=True 
+[Edit] 'Y in' (1634,1065,225x33) en=True val='0.000'
+[Text] 'in' (1862,1066,20x31) en=True 
+[Text] 'RZ' (1583,1138,35x38) en=True 
+[Edit] 'RZ °' (1634,1140,235x33) en=True val='0.00'
+[Text] '°' (1871,1141,11x31) en=True 
+[Separator] '' (1199,1216,692x2) en=True 
+[Text] 'Seek' (1199,1243,66x38) en=True 
+[Text] 'Distance' (1217,1306,113x38) en=True 
+[Edit] 'in' (1573,1309,272x33) en=True val='11.00'
+[Text] 'in' (1851,1309,21x31) en=True 
+[Text] 'Speed' (1217,1388,81x38) en=True 
+[Edit] 'in/s' (1573,1391,253x33) en=True val='0.15'
+[Text] 'in/s' (1833,1392,39x31) en=True 
+[Text] 'Acceleration' (1217,1471,161x38) en=True 
+[Edit] 'in/s²' (1573,1474,246x33) en=True val='1.54'
+[Text] 'in/s²' (1825,1475,47x31) en=True 
+[Text] 'Retract' (1199,1546,102x38) en=True 
+[Text] 'Offset' (1217,1609,80x38) en=True 
+[Button] '' (1822,1594,69x69) en=True 
+[Text] 'X' (1243,1689,19x38) en=True 
+[Edit] 'X in' (1286,1691,233x33) en=True val='0.000'
+[Text] 'in' (1521,1692,21x31) en=True 
+[Text] 'Y' (1584,1689,18x38) en=True 
+[Edit] 'Y in' (1626,1691,233x33) en=True val='0.000'
+[Text] 'in' (1862,1692,20x31) en=True 
+[Text] 'Z' (1244,1764,17x38) en=True 
+[Edit] 'Z in' (1286,1766,233x33) en=True val='0.000'
+[Text] 'in' (1521,1767,21x31) en=True 
+[Text] 'RZ' (1575,1764,35x38) en=True 
+[Edit] 'RZ °' (1626,1766,243x33) en=True val='0.00'
+[Text] '°' (1871,1767,11x31) en=True 
+[Text] 'Speed' (1217,1846,81x38) en=True 
+[Edit] 'in/s' (1573,1849,253x33) en=True val='5.00'
+[Text] 'in/s' (1833,1850,39x31) en=True 
+[Text] 'Acceleration' (1217,1928,161x38) en=True 
+[Edit] 'in/s²' (1573,1932,246x33) en=True val='0.39'
+[Text] 'in/s²' (1825,1932,47x31) en=True 
+[Button] 'Save' (1640,934,258x69) en=False 
+[Text] 'dev' (1840,28,68x55) en=True 

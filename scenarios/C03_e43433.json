@@ -1,0 +1,39 @@
+{
+ "id": "C03",
+ "title": "e43433",
+ "desc": "녹화 시나리오 · 4단계",
+ "admin": true,
+ "recorded_role": "Admin",
+ "recorded_at": "2026-10-19 17:17:12",
+ "steps": [
+  {
+   "type": "Button",
+   "name": "IO",
+   "nth": 0,
+   "label": "Button 'IO'",
+   "action": "click"
+  },
+  {
+   "type": "Button",
+   "name": "Modbus Master",
+   "nth": 0,
+   "label": "Button 'Modbus Master'",
+   "action": "click"
+  },
+  {
+   "type": "Button",
+   "name": "Digital Input",
+   "nth": 0,
+   "label": "Button 'Digital Input'",
+   "action": "click"
+  },
+  {
+   "type": "Button",
+   "name": "Digital Output",
+   "nth": 0,
+   "label": "Button 'Digital Output'",
+   "action": "click"
+  }
+ ],
+ "expects": []
+}

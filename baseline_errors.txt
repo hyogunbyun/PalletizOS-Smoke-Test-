@@ -1,0 +1,12 @@
+# 정상 소음으로 승인된 앱 로그 에러 서명 (숫자는 #로 치환). 한 줄에 하나.
+# approve_errors.bat 을 실행하면 마지막 실행에서 새로 나온 서명이 여기에 추가된다.
+Login failed: Error: Login failed
+Login failed: Error: Password is not found
+[DataSyncManager] GET, url: /changeNote, status: #, reason: 'Request failed with status code #'
+[ModbusTcpMaster] writeMultipleHoldingRegisters: Not connected (ip: #.#.#.#, symbol: Left_Recipe_Name)
+[ModbusTcpMaster] writeMultipleHoldingRegisters: Not connected (ip: #.#.#.#, symbol: Right_Recipe_Name)
+[RobotCommunicationManager] DELETE, url: /send_delete_package/, status: #, reason: 'Request failed with status code #'
+[RobotCommunicationManager] GET, url: /get_industrial_ethernet_config, status: #, reason: 'Request failed with status code #'
+[SwiftMoveTcpClient] Socket error: connect ECONNREFUSED #.#.#.#:#, connectedHost=(none)
+[[object Object]][login_failed] Login failed: Error: Login failed
+[[object Object]][login_failed] Login failed: Error: Password is not found

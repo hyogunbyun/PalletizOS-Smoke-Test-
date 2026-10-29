@@ -1,0 +1,48 @@
+[Button] 'A' (18,53,64x59) en=True 
+[Button] '' (14,152,72x60) en=True 
+[Button] '' (14,219,72x59) en=True 
+[Button] '' (14,285,72x59) en=True 
+[Button] '' (14,351,72x60) en=True 
+[Button] '' (14,417,72x60) en=True 
+[Button] '' (14,505,72x60) en=True 
+[Button] '' (14,571,72x60) en=True 
+[Button] '' (18,847,64x69) en=True 
+[Button] '' (18,922,64x69) en=True 
+[Button] 'General' (118,46,323x69) en=True 
+[Button] 'Conveyor' (118,125,323x69) en=True 
+[Button] 'Pallet' (118,204,323x69) en=True 
+[Button] 'Tool' (118,283,323x69) en=True 
+[Button] 'Slipsheet' (118,362,323x69) en=True 
+[Button] 'Account' (118,441,323x69) en=True 
+[Button] 'Remote CS' (118,520,323x69) en=True 
+[Button] 'Backup & Restore' (118,599,323x69) en=True 
+[Button] '100%' (966,50,184x68) en=True 
+[Text] 'Conveyor' (1199,63,139x40) en=True 
+[Button] 'Conveyor 01' (1170,140,750x91) en=True 
+[CheckBox] '' (1390,185,62x18) en=True 
+[Text] 'Conveyor Direction' (1221,267,264x38) en=True 
+[Button] 'to Front' (1556,252,335x69) en=True 
+[Text] 'Corner Direction' (1221,362,229x38) en=True 
+[Button] 'Left' (1556,347,167x69) en=True 
+[Button] 'Right' (1722,347,169x69) en=True 
+[Text] 'Reference Point' (1221,458,205x38) en=True 
+[Button] '' (1435,455,45x45) en=True 
+[Button] 'Get Pose' (1672,443,68x69) en=True 
+[Button] 'Move To' (1747,443,69x69) en=True 
+[Button] '' (1822,443,69x69) en=True 
+[Text] 'X' (1247,538,19x38) en=True 
+[Edit] 'X in' (1290,540,231x33) en=True val='4.000'
+[Text] 'in' (1523,540,21x31) en=True 
+[Text] 'Y' (1586,538,18x38) en=True 
+[Edit] 'Y in' (1628,540,231x33) en=True val='-40.000'
+[Text] 'in' (1862,540,20x31) en=True 
+[Text] 'Z' (1248,613,17x38) en=True 
+[Edit] 'Z in' (1290,615,231x33) en=True val='-23.937'
+[Text] 'in' (1523,616,21x31) en=True 
+[Text] 'RZ' (1577,613,35x38) en=True 
+[Edit] 'RZ °' (1628,615,241x33) en=True val='90.00'
+[Text] '°' (1871,616,11x31) en=True 
+[Button] 'Conveyor 02' (1170,695,750x91) en=True 
+[CheckBox] '' (1390,740,62x19) en=True 
+[Button] 'Save' (1640,934,258x69) en=False 
+[Text] 'dev' (1840,28,68x55) en=True 

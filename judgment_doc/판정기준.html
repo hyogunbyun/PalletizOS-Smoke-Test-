@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>PalletizOS 스모크 판정 기준</title>
+<style>
+@font-face { font-family:'NotoKR'; src: local('Noto Sans KR Light');  font-weight:300; }
+@font-face { font-family:'NotoKR'; src: local('Noto Sans KR');        font-weight:400; }
+@font-face { font-family:'NotoKR'; src: local('Noto Sans KR Medium'); font-weight:500; }
+@font-face { font-family:'NotoKR'; src: local('Noto Sans KR Black');  font-weight:900; }
+
+*{margin:0;padding:0;box-sizing:border-box}
+@page{ size:420mm 297mm; margin:0 }
+html,body{background:#8C939C}
+body{font-family:'NotoKR','맑은 고딕',sans-serif;color:#14243A;
+     -webkit-font-smoothing:antialiased;
+     -webkit-print-color-adjust:exact; print-color-adjust:exact}
+
+.page{position:relative;width:1586px;height:1121px;background:#EEF1F5;
+      padding:30px 34px 26px;margin:26px auto;box-shadow:0 12px 38px rgba(0,0,0,.42);
+      display:flex;flex-direction:column;overflow:hidden}
+@media print{ .page{margin:0;box-shadow:none;page-break-after:always} .page:last-child{page-break-after:auto} }
+
+.hd{flex:none;display:flex;align-items:flex-end;justify-content:space-between;
+    padding-bottom:11px;border-bottom:3px solid #1B3A5C;margin-bottom:16px}
+.hd .l h1{font-weight:900;font-size:34px;letter-spacing:-.042em;line-height:1.12}
+.hd .l h1 em{font-style:normal;color:#C25610}
+.hd .l p{font-weight:300;font-size:16.5px;color:#4A5A70;margin-top:6px;letter-spacing:-.02em}
+.hd .r{text-align:right;font-weight:400;font-size:11.5px;color:#68788E;line-height:1.8;flex:none}
+.hd .r b{font-weight:500;color:#14243A}
+
+.grid{flex:1 1 0;min-height:0;display:flex;flex-direction:column;gap:18px}
+.row{flex:1 1 0;min-height:0;display:flex;gap:18px}
+.card{flex:1 1 0;min-width:0;background:#fff;border:1px solid #DCE2EA;border-radius:13px;
+      padding:13px 16px 12px;display:flex;flex-direction:column;overflow:hidden}
+.ch{flex:none;display:flex;align-items:center;gap:9px;margin-bottom:8px}
+.ch .no{flex:none;min-width:28px;height:27px;padding:0 6px;border-radius:7px;background:#1B3A5C;color:#fff;
+        font-weight:900;font-size:14px;display:flex;align-items:center;justify-content:center}
+.ch h2{flex:1;font-weight:900;font-size:21px;letter-spacing:-.042em;line-height:1.14}
+.ch h2 em{font-style:normal;color:#C25610}
+.ch h2 span{font-weight:400;font-size:13px;color:#8C9AAC;letter-spacing:-.01em}
+.ch .tag{flex:none;font-weight:500;font-size:10.2px;letter-spacing:.09em;color:#8C9AAC;
+         border:1px solid #DCE2EA;border-radius:20px;padding:3px 9px;white-space:nowrap}
+.cb{flex:1 1 0;min-height:0;display:flex;flex-direction:column}
+
+.lead{font-weight:500;font-size:15px;line-height:1.4;letter-spacing:-.03em;color:#14243A}
+.txt{font-weight:400;font-size:13.5px;line-height:1.46;letter-spacing:-.024em;color:#37485E}
+.tiny{font-weight:400;font-size:12.2px;line-height:1.44;letter-spacing:-.02em;color:#68788E}
+.lbl{font-weight:500;font-size:10.6px;letter-spacing:.13em;color:#8C9AAC;text-transform:uppercase}
+.txt b,.tiny b,.lead b{font-weight:500;color:#14243A}
+.or{color:#C25610} .gn{color:#2A6E51} .rd{color:#A0231C}
+code{font-family:Consolas,monospace;font-size:.94em}
+
+.box{background:#F4F7FA;border-radius:8px;padding:7px 10px}
+.box.o{background:#FDF2EA}
+.box.r{background:#FCEDEB}
+.box.g{background:#E9F3ED}
+.box > .lbl{display:block;margin-bottom:3px}
+.mono{font-family:Consolas,monospace;font-size:11.6px;line-height:1.55;color:#37485E;white-space:pre-wrap}
+.mono b{font-weight:400;color:#14243A}
+
+.eq{background:#14243A;border-radius:8px;padding:8px 11px;color:#E6ECF3;
+    font-family:Consolas,monospace;font-size:11.9px;line-height:1.55;letter-spacing:-.01em;white-space:pre-wrap}
+.eq .k{color:#F0A868}
+.eq .c{color:#7E93AC}
+.eq b{font-weight:400;color:#8FD3B0}
+
+.dstrip{background:#1B3A5C;border-radius:8px;padding:8px 12px;color:#fff;
+        font-weight:500;font-size:12.6px;line-height:1.4;letter-spacing:-.026em}
+.dstrip .lbl{color:#9DB6D0;display:block;margin-bottom:3px}
+.dstrip b{font-weight:900;color:#FFC79A}
+.dstrip.rd{background:#A0231C} .dstrip.rd .lbl{color:#F3C4BF} .dstrip.rd b{color:#FFD9C2}
+.dstrip.gn{background:#2A6E51} .dstrip.gn .lbl{color:#B6D9C6} .dstrip.gn b{color:#D8F0C9}
+
+table{width:100%;border-collapse:collapse;font-size:12px;letter-spacing:-.02em}
+th{background:#1B3A5C;color:#fff;font-weight:500;font-size:11px;padding:4px 7px;text-align:left}
+td{padding:3.2px 7px;border-bottom:1px solid #E7ECF2;color:#37485E;font-weight:400;
+   word-break:break-word;overflow-wrap:anywhere;line-height:1.3;background:#fff}
+tr.alt td{background:#F7F9FB}
+td b{font-weight:500;color:#14243A}
+th.c,td.c{text-align:center}
+
+.flow{display:flex;align-items:stretch;gap:6px}
+.flow .step{flex:1 1 0;min-width:0;background:#F4F7FA;border-radius:7px;padding:6px 9px;
+            border-left:3px solid #1B3A5C}
+.flow .step.o{border-left-color:#C25610;background:#FDF2EA}
+.flow .step .n{font-weight:500;font-size:9.6px;letter-spacing:.1em;color:#8C9AAC}
+.flow .step .t{font-weight:400;font-size:12.1px;letter-spacing:-.028em;margin-top:2px;line-height:1.26;color:#37485E}
+.flow .step .t b{font-weight:500;color:#14243A}
+
+.li{display:flex;gap:8px;align-items:flex-start;line-height:1.36}
+.li .b{flex:none;width:17px;height:17px;border-radius:5px;background:#E7EDF4;color:#1B3A5C;
+       font-weight:900;font-size:10.2px;display:flex;align-items:center;justify-content:center;margin-top:1.5px}
+.li.r .b{background:#F7D9D5;color:#A0231C}
+.li.g .b{background:#DCEDE4;color:#2A6E51}
+.li.o .b{background:#FBE2CE;color:#C25610}
+
+.chip{display:inline-block;background:#E7EDF4;color:#1B3A5C;border-radius:5px;
+      font-weight:500;font-size:11.2px;padding:2px 7px;letter-spacing:-.012em;margin:0 3px 3px 0}
+.chip.o{background:#FBE2CE;color:#C25610}
+.chip.g{background:#DCEDE4;color:#2A6E51}
+.chip.r{background:#F7D9D5;color:#A0231C}
+.chips{display:flex;flex-wrap:wrap}
+
+.kpi{display:flex;gap:7px}
+.kpi > div{flex:1 1 0;background:#F4F7FA;border-radius:8px;padding:6px 8px;text-align:center}
+.kpi .v{font-weight:900;font-size:19px;letter-spacing:-.045em;line-height:1}
+.kpi .l{font-weight:400;font-size:10.2px;color:#8C9AAC;margin-top:4px;letter-spacing:-.018em;line-height:1.25}
+.kpi .hi{background:#FDF2EA} .kpi .hi .v{color:#C25610}
+
+.two{display:flex;gap:9px}
+.two > div{flex:1 1 0;min-width:0;display:flex;flex-direction:column}
+
+/* 4축 게이지 ─ 비용·검출력·도구의존·왜곡위험 */
+.gau{flex:none;display:flex;gap:6px}
+.gau > div{flex:1 1 0;min-width:0;background:#F4F7FA;border-radius:7px;padding:5px 8px 6px}
+.gau .n{font-weight:500;font-size:9.6px;letter-spacing:.02em;color:#8C9AAC;white-space:nowrap;
+        display:flex;justify-content:space-between}
+.gau .n s{text-decoration:none;font-weight:900;font-size:9.6px;color:#4A5A70}
+.gau .d{display:flex;gap:3px;margin-top:4px}
+.gau .d i{flex:1 1 0;height:5px;border-radius:2px;background:#DDE4EC}
+.gau .d i.on{background:#1B3A5C}
+.gau .d.g i.on{background:#2A6E51}
+.gau .d.o i.on{background:#C25610}
+
+.jd{flex:none;display:flex;gap:6px;align-items:center;font-size:11.6px;letter-spacing:-.022em;
+    font-weight:400;color:#68788E;line-height:1.3}
+.jd em{font-style:normal;font-weight:900;font-size:10.4px;letter-spacing:.04em;border-radius:5px;
+       padding:2.5px 7px;white-space:nowrap;flex:none}
+.jd em.y{background:#DCEDE4;color:#2A6E51}
+.jd em.c{background:#FBE2CE;color:#C25610}
+.jd em.n{background:#F7D9D5;color:#A0231C}
+.jd b{font-weight:500;color:#37485E}
+
+.sp{flex:1 1 0;min-height:0}
+.g3{height:3px;flex:none} .g4{height:4px;flex:none} .g5{height:5px;flex:none}
+.g7{height:7px;flex:none} .g9{height:9px;flex:none}
+
+.pf{flex:none;display:flex;justify-content:space-between;align-items:center;
+    padding-top:8px;margin-top:12px;border-top:1px solid #D5DDE6;
+    font-weight:400;font-size:11.3px;color:#8C9AAC;letter-spacing:.02em}
+.pf b{font-weight:500;color:#4A5A70}
+</style>
+</head>
+<body>
+<!-- ═══════════════════ PAGE 1 ─ 판정 규칙 ═══════════════════ -->
+<div class="page">
+  <div class="hd">
+    <div class="l">
+      <h1>PalletizOS 스모크 자동화 <em>PASS · FAIL 판정 기준</em></h1>
+      <p>자동화가 항목 하나하나를 어떻게 PASS/FAIL로 결정하는지 — 규칙 · 흐름 · 실패 조건 · 실제 예시</p>
+    </div>
+    <div class="r">
+      작성 <b>2026-10-26</b><br>
+      대상 <b>PalletizOS v2.0.0 · Dr.Dart-Platform 3.7.0</b> (가상 제어기)<br>
+      근거 <b>run_smoke.py · flows*.py · logcheck.py</b> (실제 코드 기준)
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="row">
+
+      <!-- ① -->
+      <div class="card">
+        <div class="ch"><div class="no">1</div><h2>한 줄 정의와 <em>결과 6종</em></h2><div class="tag">DEFINITION</div></div>
+        <div class="cb">
+          <div class="box o"><div class="lead"><b>PASS</b> = 버튼을 눌렀을 때 <b>화면 값이 기대대로 바뀌고</b>, 앱 로그에 <b>있어야 할 기록이 남고</b>, <b>에러 문구가 뜨지 않은 것</b>.<br>
+          <b class="rd">FAIL</b> = 이 중 하나라도 어긋났는데, <b>되돌린 뒤 한 번 더 해도</b> 또 어긋난 것.</div></div>
+          <div class="g9"></div>
+          <table>
+            <colgroup><col style="width:21%"><col style="width:53%"><col style="width:13%"><col style="width:13%"></colgroup>
+            <tr><th>결과</th><th>쉽게 말하면</th><th class="c">결함으로 셈</th><th class="c">표시창</th></tr>
+            <tr><td><span class="chip g">PASS</span></td><td>한 번에 기대대로 동작, 로그도 깨끗함</td><td class="c">—</td><td class="c"><b class="gn">PASS</b></td></tr>
+            <tr class="alt"><td><span class="chip o">PASS(주의)</span></td><td>화면은 정상인데 앱 로그에 <b>처음 보는 종류의 에러</b>가 찍힘</td><td class="c">아니오</td><td class="c"><b class="or">WARN</b></td></tr>
+            <tr><td><span class="chip o">PASS(불안정)</span></td><td>1차 실패 → 되돌리고 다시 하니 통과</td><td class="c">아니오</td><td class="c"><b class="or">WARN</b></td></tr>
+            <tr class="alt"><td><span class="chip r">FAIL</span></td><td>1차·2차 <b>둘 다</b> 기대와 다름</td><td class="c"><b class="rd">예</b></td><td class="c"><b class="rd">FAIL</b></td></tr>
+            <tr><td><span class="chip">N/A</span></td><td>확인할 버튼이 이 화면 구성에 <b>원래 없음</b> (예: 4K 화면의 H06)</td><td class="c">—</td><td class="c">N/A</td></tr>
+            <tr class="alt"><td><span class="chip">환경 오류</span></td><td>제품이 아니라 <b>실행 조건</b> 문제로 확인을 못 함 (Admin 로그인·시뮬레이터 등)</td><td class="c">아니오</td><td class="c">SKIP</td></tr>
+          </table>
+          <div class="sp"></div>
+          <div class="dstrip"><span class="lbl">핵심</span>재시도는 <b>FAIL일 때만 1번</b>. 두 번 모두 실패해야 FAIL이라서, 일시적인 응답 지연으로 FAIL이 나지 않습니다.</div>
+        </div>
+      </div>
+
+      <!-- ② -->
+      <div class="card">
+        <div class="ch"><div class="no">2</div><h2>판정 흐름 <span>— 항목 하나가 결과를 받기까지</span></h2><div class="tag">FLOW</div></div>
+        <div class="cb">
+          <svg viewBox="0 0 718 372" width="100%" style="flex:1 1 0;min-height:0" font-family="NotoKR,'맑은 고딕',sans-serif">
+            <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1B3A5C"/></marker></defs>
+            <g font-size="14" fill="#14243A">
+              <!-- 1 실행 -->
+              <rect x="8" y="12" width="170" height="54" rx="9" fill="#F4F7FA" stroke="#1B3A5C" stroke-width="1.5"/>
+              <text x="93" y="36" text-anchor="middle" font-weight="900">① 항목 실행</text>
+              <text x="93" y="55" text-anchor="middle" font-size="11.5" fill="#68788E">버튼 누르기·값 읽기</text>
+              <line x1="178" y1="39" x2="226" y2="39" stroke="#1B3A5C" stroke-width="1.6" marker-end="url(#ar)"/>
+              <!-- 2 판단 -->
+              <rect x="228" y="8" width="214" height="62" rx="9" fill="#FDF2EA" stroke="#C25610" stroke-width="1.8"/>
+              <text x="335" y="33" text-anchor="middle" font-weight="900">② 확인 지점이 전부</text>
+              <text x="335" y="54" text-anchor="middle" font-weight="900">기대대로인가?</text>
+              <line x1="442" y1="39" x2="486" y2="39" stroke="#1B3A5C" stroke-width="1.6" marker-end="url(#ar)"/>
+              <text x="464" y="31" text-anchor="middle" font-size="12" fill="#2A6E51" font-weight="500">예</text>
+              <!-- 3 로그 -->
+              <rect x="488" y="8" width="222" height="62" rx="9" fill="#FDF2EA" stroke="#C25610" stroke-width="1.8"/>
+              <text x="599" y="33" text-anchor="middle" font-weight="900">③ 그동안 앱 로그에</text>
+              <text x="599" y="54" text-anchor="middle" font-weight="900">처음 보는 에러?</text>
+              <line x1="545" y1="70" x2="545" y2="114" stroke="#1B3A5C" stroke-width="1.6" marker-end="url(#ar)"/>
+              <line x1="655" y1="70" x2="655" y2="114" stroke="#1B3A5C" stroke-width="1.6" marker-end="url(#ar)"/>
+              <text x="535" y="96" text-anchor="end" font-size="12" fill="#2A6E51" font-weight="500">없음</text>
+              <text x="665" y="96" font-size="12" fill="#C25610" font-weight="500">있음</text>
+              <rect x="488" y="116" width="106" height="54" rx="9" fill="#2A6E51"/>
+              <text x="541" y="149" text-anchor="middle" font-weight="900" font-size="18" fill="#fff">PASS</text>
+              <rect x="604" y="116" width="106" height="54" rx="9" fill="#D89614"/>
+              <text x="657" y="140" text-anchor="middle" font-weight="900" font-size="15" fill="#fff">PASS</text>
+              <text x="657" y="159" text-anchor="middle" font-weight="500" font-size="12" fill="#fff">(주의)</text>
+              <!-- 아니오 → 재시도 -->
+              <line x1="335" y1="70" x2="335" y2="114" stroke="#1B3A5C" stroke-width="1.6" marker-end="url(#ar)"/>
+              <text x="345" y="96" font-size="12" fill="#A0231C" font-weight="500">아니오</text>
+              <rect x="228" y="116" width="214" height="54" rx="9" fill="#F4F7FA" stroke="#1B3A5C" stroke-width="1.5"/>
+              <text x="335" y="140" text-anchor="middle" font-weight="900">원래 상태로 되돌리고</text>
+              <text x="335" y="160" text-anchor="middle" font-size="12" fill="#68788E">한 번 더 실행 (재시도 1회)</text>
+              <line x1="335" y1="170" x2="335" y2="200" stroke="#1B3A5C" stroke-width="1.6" marker-end="url(#ar)"/>
+              <rect x="228" y="202" width="214" height="54" rx="9" fill="#FDF2EA" stroke="#C25610" stroke-width="1.8"/>
+              <text x="335" y="234" text-anchor="middle" font-weight="900">이번엔 기대대로인가?</text>
+              <line x1="442" y1="229" x2="486" y2="229" stroke="#1B3A5C" stroke-width="1.6" marker-end="url(#ar)"/>
+              <text x="464" y="221" text-anchor="middle" font-size="12" fill="#2A6E51" font-weight="500">예</text>
+              <rect x="488" y="202" width="222" height="54" rx="9" fill="#D89614"/>
+              <text x="599" y="234" text-anchor="middle" font-weight="900" font-size="16" fill="#fff">PASS(불안정)</text>
+              <line x1="335" y1="256" x2="335" y2="290" stroke="#1B3A5C" stroke-width="1.6" marker-end="url(#ar)"/>
+              <text x="345" y="278" font-size="12" fill="#A0231C" font-weight="500">아니오</text>
+              <rect x="228" y="292" width="214" height="60" rx="9" fill="#A0231C"/>
+              <text x="335" y="321" text-anchor="middle" font-weight="900" font-size="20" fill="#fff">FAIL</text>
+              <text x="335" y="341" text-anchor="middle" font-size="11.5" fill="#F3C4BF">스크린샷·화면 구조 저장</text>
+              <!-- 재시도 없는 결과 -->
+              <rect x="8" y="116" width="196" height="236" rx="9" fill="#F4F7FA" stroke="#DCE2EA"/>
+              <text x="20" y="140" font-size="11" fill="#8C9AAC" font-weight="500" letter-spacing="1.4">재시도 없이 바로 결정</text>
+              <rect x="20" y="152" width="58" height="24" rx="5" fill="#4B5563"/><text x="49" y="169" text-anchor="middle" font-size="12.5" fill="#fff" font-weight="900">N/A</text>
+              <text x="20" y="196" font-size="12.5">확인할 버튼이 이 화면</text>
+              <text x="20" y="214" font-size="12.5">구성에 원래 없음</text>
+              <rect x="20" y="234" width="78" height="24" rx="5" fill="#2F6FD6"/><text x="59" y="251" text-anchor="middle" font-size="12.5" fill="#fff" font-weight="900">환경 오류</text>
+              <text x="20" y="278" font-size="12.5">Admin 로그인 실패,</text>
+              <text x="20" y="296" font-size="12.5">시뮬레이터·앱 연결 실패,</text>
+              <text x="20" y="314" font-size="12.5">언어·화면이 달라 못 읽음,</text>
+              <text x="20" y="332" font-size="12.5">종료 버튼으로 중단됨</text>
+              <!-- 원상복구 참고 -->
+              <rect x="488" y="282" width="222" height="70" rx="9" fill="#fff" stroke="#DCE2EA" stroke-dasharray="4 3"/>
+              <text x="500" y="304" font-size="11" fill="#8C9AAC" font-weight="500" letter-spacing="1.2">모든 항목 공통</text>
+              <text x="500" y="324" font-size="12.5">끝나면 원래 상태로 되돌림</text>
+              <text x="500" y="342" font-size="12.5">(결과에는 영향 없음, 따로 표시)</text>
+            </g>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+
+      <!-- ③ -->
+      <div class="card">
+        <div class="ch"><div class="no">3</div><h2>FAIL이 되는 <em>6가지 경우</em></h2><div class="tag">FAIL CONDITIONS</div></div>
+        <div class="cb">
+          <div class="txt">아래 중 <b>하나라도</b> 해당하면 그 시도는 실패입니다. 두 번 연속 실패하면 FAIL입니다.</div>
+          <div class="g7"></div>
+          <table>
+            <colgroup><col style="width:6%"><col style="width:22%"><col style="width:36%"><col style="width:36%"></colgroup>
+            <tr><th>#</th><th>경우</th><th>쉽게 말하면</th><th>실제 메시지 예</th></tr>
+            <tr><td><b>F1</b></td><td><b>값이 다름</b></td><td>눌렀는데 숫자·글자가 규칙과 다르게 바뀜</td><td><code>진행률 37% ≠ 기대 38% (N=15/40)</code></td></tr>
+            <tr class="alt"><td><b>F2</b></td><td><b>안 바뀜</b> (시간 초과)</td><td>정해진 시간(5~10초, Recovery·홈 이동은 최대 45초) 안에 화면이 그대로</td><td><code>'Enable Robot' 후 버튼이 'Disable Robot'(으)로 안 바뀜</code></td></tr>
+            <tr><td><b>F3</b></td><td><b>로그 없음</b></td><td>동작했으면 앱 로그에 남아야 할 기록이 5초 안에 안 찍힘</td><td><code>로그에 'Servo ON' 없음</code></td></tr>
+            <tr class="alt"><td><b>F4</b></td><td><b>에러 문구</b></td><td>새로 뜬 글자에 error·fail·오류·실패 등. <b>"Safety zone error"는 제외</b> · 적용: H02·H03·H06·H08·녹화(C)·<b>전체 클릭(K)의 모든 클릭</b> · 전체 클릭은 <b>누른 뒤 앱이 꺼져도</b> FAIL</td><td><code>레시피 적용: 에러 문구 표시 ['Load failed']</code></td></tr>
+            <tr><td><b>F5</b></td><td><b>못 찾음·안 눌림</b></td><td>있어야 할 버튼·메뉴가 없거나 눌러도 반응 없음</td><td><code>⋮ 메뉴 항목 누락: ['Delete', 'Edit Recipe', …]</code></td></tr>
+            <tr class="alt"><td><b>F6</b></td><td><b>화면끼리 다름</b></td><td>두 화면에 나온 같은 값이 서로 다름</td><td><code>Solution Version v1.1.0 ≠ Home 표시 v1.1.1</code></td></tr>
+          </table>
+          <div class="sp"></div>
+          <div class="box r"><div class="tiny"><b class="rd">F5는 먼저 의심부터.</b> 제품 결함일 수도, 자동화가 화면을 못 다룬 것일 수도 있습니다. 실패 스크린샷에 해당 버튼이 <b>보이는데</b> 실패했다면 자동화 쪽 문제 → <code>--mode mouse</code>(실제 클릭)로 다시 돌려 비교합니다. 10-19 실행의 H06·R04 FAIL이 이 경우였습니다.</div></div>
+        </div>
+      </div>
+
+      <!-- ④ -->
+      <div class="card">
+        <div class="ch"><div class="no">4</div><h2>예시: H05 <em>박스 [+] 한 번</em></h2><div class="tag">EXAMPLE</div></div>
+        <div class="cb">
+          <div class="txt">레시피가 <b>4층 × 층당 10박스 = 전체 40개</b>, 지금 <b>2층에 박스 5개</b>가 쌓인 상태에서 박스 [+]를 누르면:</div>
+          <div class="g7"></div>
+          <div class="eq"><span class="c">// 완료 박스 수 N = (층−1) × 층당 박스 + 현재 층 박스</span>
+누르기 전  N = (2−1)×10 + 5 = <b>15</b>   진행률 = 15÷40 = 37.5% → <b>38%</b>
+누른 뒤   N = <b>16</b> → 기대: 층 <b>2</b>/4 · 박스 <b>6</b>/10 · 진행률 <b>40%</b>
+          [−] 활성 (N&gt;0) · [+] 활성 (N&lt;40)</div>
+          <div class="g9"></div>
+          <div class="two">
+            <div class="box g"><span class="lbl gn">PASS</span><div class="g3"></div>
+              <div class="txt">화면이 <b>2층 · 6/10 · 40%</b>, 버튼 두 개 모두 활성 → 기대와 전부 일치<br>→ 다시 [−]를 눌러 <b>15</b>로 되돌림</div></div>
+            <div class="box r"><span class="lbl rd">FAIL</span><div class="g3"></div>
+              <div class="txt">화면이 <b>2층 · 6/10 · 38%</b>로 남음 (F1)<br>→ 되돌리고 다시 해도 38% → <b class="rd">FAIL</b><br><span class="tiny">메시지: 진행률 38% ≠ 기대 40% (N=16/40)</span></div></div>
+          </div>
+          <div class="sp"></div>
+          <div class="box"><div class="tiny"><b>값은 이미지가 아니라 글자로 읽습니다.</b> Windows 접근성 정보(UIA)로 버튼 이름·숫자·활성 여부를 읽어 계산값과 비교합니다. 창 크기나 겹친 창의 영향을 받지 않고, 실패 메시지에 "무엇이 무엇과 달랐는지"가 값 그대로 남습니다.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pf"><span><b>PalletizOS 스모크 자동화</b> · PASS/FAIL 판정 기준</span><span>1 / 2</span></div>
+</div>
+
+
+<!-- ═══════════════════ PAGE 2 ─ 근거·로그·전체 판정 ═══════════════════ -->
+<div class="page">
+  <div class="hd">
+    <div class="l">
+      <h1>무엇과 비교하나 · <em>전체 판정은 어떻게</em></h1>
+      <p>확인 근거 4종, "새 로그 에러"를 가리는 법, 42개 결과를 하나의 판정으로 묶는 순서, 결과별로 할 일</p>
+    </div>
+    <div class="r">
+      작성 <b>2026-10-26</b><br>
+      상세 문서 <b>dart_autotest/MANUAL.md</b> 6장<br>
+      실제 사례 <b>2026-10-26 11:38 실행</b> (42항목 · 76분)
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="row">
+
+      <!-- ⑤ -->
+      <div class="card">
+        <div class="ch"><div class="no">5</div><h2>기대값은 어디서 오나 <span>— 확인 근거 4종</span></h2><div class="tag">ORACLE</div></div>
+        <div class="cb">
+          <div class="li"><div class="b">1</div><div><div class="lead">화면 값의 <b>규칙</b></div>
+            <div class="txt">누르기 전 값으로 누른 뒤 값을 계산해 비교. 예: 박스 [+] → N+1, 진행률 = N÷전체, [−]는 N=0일 때만 비활성 · 토글 Off → 그 열의 버튼 비활성</div></div></div>
+          <div class="g9"></div>
+          <div class="li"><div class="b">2</div><div><div class="lead"><b>화면끼리</b> 일치</div>
+            <div class="txt">시작 전에 Home 값(레시피 이름·층·박스·버전)을 기억해 두고 다른 메뉴의 같은 값과 비교. 예: Recipes의 In Use = Home 레시피 · Settings 버전 = Home 버전</div></div></div>
+          <div class="g9"></div>
+          <div class="li"><div class="b">3</div><div><div class="lead">앱 로그 <b>기록</b></div>
+            <div class="txt"><code>C:\Dr.Dart-Platform\logs\오늘날짜*.log</code>에서 동작 직후 줄을 찾음. 예: Enable → <code>Servo ON</code> · 홈 이동 → <code>0506</code> · Recovery → <code>0511</code> · DO 출력 → <code>setDigitalOutput 200 OK</code> · Log 화면 최신 줄 = 파일 마지막 ModuleLog</div></div></div>
+          <div class="g9"></div>
+          <div class="li r"><div class="b">4</div><div><div class="lead">에러 문구 <b>금지</b></div>
+            <div class="txt">눌렀을 때 새로 나타난 글자에 <code>error · fail · failed · exception · 오류 · 실패</code>가 있으면 실패. 단 <b>"Safety zone error"</b>는 시뮬레이터 안전 설정 때문에 항상 떠서 제외</div></div></div>
+          <div class="sp"></div>
+          <div class="dstrip"><span class="lbl">기억할 것</span>기대값은 <b>사양서 수치가 아니라 같은 화면의 규칙·다른 화면·로그</b>에서 옵니다. 그래서 레시피가 바뀌어도 판정 기준을 고칠 필요가 없습니다.</div>
+        </div>
+      </div>
+
+      <!-- ⑥ -->
+      <div class="card">
+        <div class="ch"><div class="no">6</div><h2>"새 로그 에러" 가리는 법 <span>— PASS(주의)</span></h2><div class="tag">LOG CHECK</div></div>
+        <div class="cb">
+          <div class="txt">앱은 평소에도 에러 줄을 남깁니다(로그인 실패 시도, 서버 조회 실패 등). 그래서 <b>에러가 있느냐</b>가 아니라 <b>처음 보는 종류냐</b>로 봅니다.</div>
+          <div class="g9"></div>
+          <div class="flow">
+            <div class="step"><div class="n">STEP 1</div><div class="t">항목 시작 때 로그 파일 <b>끝 위치</b> 기억</div></div>
+            <div class="step"><div class="n">STEP 2</div><div class="t">그 뒤 새 줄 중 <b>[error]</b> 줄만</div></div>
+            <div class="step"><div class="n">STEP 3</div><div class="t">숫자를 모두 <b>#</b>으로 → 에러 "종류"</div></div>
+            <div class="step o"><div class="n">STEP 4</div><div class="t">기준 목록에 <b>없으면</b> 새 에러</div></div>
+          </div>
+          <div class="g9"></div>
+          <div class="eq"><span class="c">// 원문 (로그 한 줄)</span>
+[10:02:11.5][error][DP] [DataSyncManager] GET, status: <span class="k">404</span>, reason: 'Request failed with status code <span class="k">404</span>'
+<span class="c">// 종류(서명) — 숫자만 다른 같은 에러는 하나로 묶임</span>
+<b>[DataSyncManager] GET, status: #, reason: 'Request failed with status code #'</b></div>
+          <div class="g9"></div>
+          <div class="two">
+            <div class="box"><span class="lbl">기준 목록</span><div class="g3"></div><div class="tiny"><code>baseline_errors.txt</code> — 평소에도 찍히는 "정상 소음" 종류 (현재 10종)</div></div>
+            <div class="box o"><span class="lbl">새 에러가 정상 소음이면</span><div class="g3"></div><div class="tiny"><code>approve_errors.bat</code> 실행 → 목록에 추가 → 다음부터 PASS</div></div>
+          </div>
+          <div class="sp"></div>
+          <div class="tiny">※ 실행 전부터 있던 에러 줄은 보지 않습니다. 화면 확인이 PASS여도 새 에러가 있으면 PASS(주의)이고, 1차 실패 후 통과한 경우에는 PASS(불안정)이 우선합니다.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+
+      <!-- ⑦ -->
+      <div class="card">
+        <div class="ch"><div class="no">7</div><h2>전체 판정 <span>— 위에서부터 먼저 맞는 것 하나</span></h2><div class="tag">VERDICT</div></div>
+        <div class="cb">
+          <table>
+            <colgroup><col style="width:8%"><col style="width:40%"><col style="width:30%"><col style="width:22%"></colgroup>
+            <tr><th class="c">순서</th><th>조건</th><th>전체 판정</th><th class="c">최종 배지</th></tr>
+            <tr><td class="c">1</td><td>■ 자동화 종료를 누름</td><td><b>중단</b></td><td class="c">STOP</td></tr>
+            <tr class="alt"><td class="c">2</td><td>FAIL이 <b>1개라도</b> 있음</td><td><b class="rd">보류</b> — 결함 확인</td><td class="c"><b class="rd">FAIL</b></td></tr>
+            <tr><td class="c">3</td><td>FAIL 없음, 환경 오류가 1개 이상</td><td><b>재실행 필요</b></td><td class="c"><b class="rd">FAIL</b></td></tr>
+            <tr class="alt"><td class="c">4</td><td>PASS(주의)·PASS(불안정)이 1개 이상</td><td><b class="or">통과(주의)</b></td><td class="c"><b class="gn">PASS</b></td></tr>
+            <tr><td class="c">5</td><td>전부 PASS 또는 N/A</td><td><b class="gn">통과</b></td><td class="c"><b class="gn">PASS</b></td></tr>
+          </table>
+          <div class="g9"></div>
+          <div class="box"><span class="lbl">실제 사례 — 2026-10-26 11:38 · PalletizOS v2.0.0 · 42항목 · 76분</span><div class="g5"></div>
+            <div class="kpi">
+              <div><div class="v gn">28</div><div class="l">PASS (+주의 1)</div></div>
+              <div class="hi"><div class="v rd">6</div><div class="l">FAIL</div></div>
+              <div><div class="v">7</div><div class="l">해당없음</div></div>
+              <div class="hi"><div class="v">보류</div><div class="l">전체 판정 (순서 2)</div></div>
+            </div>
+            <div class="g5"></div>
+            <div class="tiny">H06·R04 백그라운드에서 드롭다운·⋮ 메뉴가 안 열림(자동화 과제, F5) · K05 실행기 오류(하위 메뉴 중복 진입, 수정함) · C01·C02·C04 녹화가 v2.0.0 화면과 안 맞음(재녹화 필요, F5) → 제품 결함으로 분류된 것 없음</div>
+          </div>
+          <div class="sp"></div>
+          <div class="tiny">※ 일부 항목이 실행되지 못하고 끝나면 남은 항목은 환경 오류로 채워져 "재실행 필요"가 됩니다. 일부만 돌았는데 "통과"로 보이는 일은 없습니다.</div>
+        </div>
+      </div>
+
+      <!-- ⑧ -->
+      <div class="card">
+        <div class="ch"><div class="no">8</div><h2>결과별로 <em>할 일</em> · 판정하지 않는 것</h2><div class="tag">ACTION</div></div>
+        <div class="cb">
+          <table>
+            <colgroup><col style="width:22%"><col style="width:78%"></colgroup>
+            <tr><th>결과</th><th>할 일</th></tr>
+            <tr><td><span class="chip g">PASS</span></td><td>없음</td></tr>
+            <tr class="alt"><td><span class="chip o">PASS(주의)</span></td><td>리포트의 로그 줄 확인 → 평소 소음이면 <code>approve_errors.bat</code>, 처음 보는 오류면 이슈 검토</td></tr>
+            <tr><td><span class="chip o">PASS(불안정)</span></td><td>반복되면 <code>elements.yaml</code>의 <code>speed</code>를 낮춰 보고, 그래도 반복되면 제품 응답 지연 의심</td></tr>
+            <tr class="alt"><td><span class="chip r">FAIL</span></td><td>메시지 → 스크린샷 → 화면 구조(UI 트리) 순서로 확인. 버튼이 보이는데 실패면 <code>--mode mouse</code>로 재확인, 화면이 실제로 틀렸으면 이슈 등록</td></tr>
+            <tr><td><span class="chip">환경 오류</span></td><td>메시지의 원인(Admin 비밀번호, 시뮬레이터, 앱 연결)을 고친 뒤 다시 실행</td></tr>
+          </table>
+          <div class="g9"></div>
+          <div class="box"><span class="lbl">실행 중 상태 표시창</span><div class="g3"></div>
+            <div class="tiny">항목 실행 중엔 <b>ING</b> → 항목이 끝나는 순간 그 결과(<b class="gn">PASS</b>·<b class="rd">FAIL</b>·<b class="or">WARN</b>·N/A·SKIP)를 1초 표시 → 다음 항목에서 다시 ING. 제목 줄에 누적(예: <code>18/42 · 통과 11 · 실패 5 · 제외 1</code>), 칩 색은 각 항목의 최종 결과(30개가 넘으면 오래된 칩부터 숨김)</div></div>
+          <div class="g9"></div>
+          <div class="lbl">판정하지 않는 것</div><div class="g4"></div>
+          <div class="chips">
+            <span class="chip">응답 속도·성능</span><span class="chip">화면 디자인·배치·색</span><span class="chip">3D 뷰 그림</span>
+            <span class="chip">"Safety zone error" 배너</span><span class="chip">실행 전부터 있던 로그 에러</span><span class="chip">원상복구 성공 여부 (리포트에 따로 표시)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pf"><span><b>PalletizOS 스모크 자동화</b> · PASS/FAIL 판정 기준</span><span>2 / 2</span></div>
+</div>
+
+</body>
+</html>

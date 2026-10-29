@@ -1,0 +1,61 @@
+{
+ "id": "C04",
+ "title": "개동",
+ "desc": "녹화 시나리오 · 6단계",
+ "admin": true,
+ "recorded_role": "Admin",
+ "recorded_at": "2026-10-21 14:16:57",
+ "steps": [
+  {
+   "type": "Button",
+   "name": "English",
+   "nth": 0,
+   "label": "Button 'English'",
+   "action": "click"
+  },
+  {
+   "type": "Button",
+   "name": "",
+   "anchor": {
+    "type": "Button",
+    "name": "Release Vacuum",
+    "nth": 0
+   },
+   "offset": [
+    -182,
+    -47
+   ],
+   "label": "Button ('Release Vacuum' 기준 -182,-47)",
+   "action": "click"
+  },
+  {
+   "type": "Button",
+   "name": "Settings",
+   "nth": 0,
+   "label": "Button 'Settings'",
+   "action": "click"
+  },
+  {
+   "type": "Button",
+   "name": "Pallet",
+   "nth": 0,
+   "label": "Button 'Pallet'",
+   "action": "click"
+  },
+  {
+   "type": "Button",
+   "name": "Tool",
+   "nth": 0,
+   "label": "Button 'Tool'",
+   "action": "click"
+  },
+  {
+   "type": "Button",
+   "name": "Slipsheet",
+   "nth": 0,
+   "label": "Button 'Slipsheet'",
+   "action": "click"
+  }
+ ],
+ "expects": []
+}

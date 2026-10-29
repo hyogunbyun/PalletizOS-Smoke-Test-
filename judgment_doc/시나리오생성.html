@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>PalletizOS 스모크 시나리오 생성 방법</title>
+<style>
+@font-face { font-family:'NotoKR'; src: local('Noto Sans KR Light');  font-weight:300; }
+@font-face { font-family:'NotoKR'; src: local('Noto Sans KR');        font-weight:400; }
+@font-face { font-family:'NotoKR'; src: local('Noto Sans KR Medium'); font-weight:500; }
+@font-face { font-family:'NotoKR'; src: local('Noto Sans KR Black');  font-weight:900; }
+
+*{margin:0;padding:0;box-sizing:border-box}
+@page{ size:420mm 297mm; margin:0 }
+html,body{background:#8C939C}
+body{font-family:'NotoKR','맑은 고딕',sans-serif;color:#14243A;
+     -webkit-font-smoothing:antialiased;
+     -webkit-print-color-adjust:exact; print-color-adjust:exact}
+
+.page{position:relative;width:1586px;height:1121px;background:#EEF1F5;
+      padding:30px 34px 26px;margin:26px auto;box-shadow:0 12px 38px rgba(0,0,0,.42);
+      display:flex;flex-direction:column;overflow:hidden}
+@media print{ .page{margin:0;box-shadow:none;page-break-after:always} .page:last-child{page-break-after:auto} }
+
+.hd{flex:none;display:flex;align-items:flex-end;justify-content:space-between;
+    padding-bottom:11px;border-bottom:3px solid #1B3A5C;margin-bottom:16px}
+.hd .l h1{font-weight:900;font-size:34px;letter-spacing:-.042em;line-height:1.12}
+.hd .l h1 em{font-style:normal;color:#C25610}
+.hd .l p{font-weight:300;font-size:16.5px;color:#4A5A70;margin-top:6px;letter-spacing:-.02em}
+.hd .r{text-align:right;font-weight:400;font-size:11.5px;color:#68788E;line-height:1.8;flex:none}
+.hd .r b{font-weight:500;color:#14243A}
+
+.grid{flex:1 1 0;min-height:0;display:flex;flex-direction:column;gap:18px}
+.row{flex:1 1 0;min-height:0;display:flex;gap:18px}
+.card{flex:1 1 0;min-width:0;background:#fff;border:1px solid #DCE2EA;border-radius:13px;
+      padding:13px 16px 12px;display:flex;flex-direction:column;overflow:hidden}
+.ch{flex:none;display:flex;align-items:center;gap:9px;margin-bottom:8px}
+.ch .no{flex:none;min-width:28px;height:27px;padding:0 6px;border-radius:7px;background:#1B3A5C;color:#fff;
+        font-weight:900;font-size:14px;display:flex;align-items:center;justify-content:center}
+.ch h2{flex:1;font-weight:900;font-size:21px;letter-spacing:-.042em;line-height:1.14}
+.ch h2 em{font-style:normal;color:#C25610}
+.ch h2 span{font-weight:400;font-size:13px;color:#8C9AAC;letter-spacing:-.01em}
+.ch .tag{flex:none;font-weight:500;font-size:10.2px;letter-spacing:.09em;color:#8C9AAC;
+         border:1px solid #DCE2EA;border-radius:20px;padding:3px 9px;white-space:nowrap}
+.cb{flex:1 1 0;min-height:0;display:flex;flex-direction:column}
+
+.lead{font-weight:500;font-size:15px;line-height:1.4;letter-spacing:-.03em;color:#14243A}
+.txt{font-weight:400;font-size:13.5px;line-height:1.46;letter-spacing:-.024em;color:#37485E}
+.tiny{font-weight:400;font-size:12.2px;line-height:1.44;letter-spacing:-.02em;color:#68788E}
+.lbl{font-weight:500;font-size:10.6px;letter-spacing:.13em;color:#8C9AAC;text-transform:uppercase}
+.txt b,.tiny b,.lead b{font-weight:500;color:#14243A}
+.or{color:#C25610} .gn{color:#2A6E51} .rd{color:#A0231C}
+code{font-family:Consolas,monospace;font-size:.94em}
+
+.box{background:#F4F7FA;border-radius:8px;padding:7px 10px}
+.box.o{background:#FDF2EA}
+.box.r{background:#FCEDEB}
+.box.g{background:#E9F3ED}
+.box > .lbl{display:block;margin-bottom:3px}
+.mono{font-family:Consolas,monospace;font-size:11.6px;line-height:1.55;color:#37485E;white-space:pre-wrap}
+.mono b{font-weight:400;color:#14243A}
+
+.eq{background:#14243A;border-radius:8px;padding:8px 11px;color:#E6ECF3;
+    font-family:Consolas,monospace;font-size:11.9px;line-height:1.55;letter-spacing:-.01em;white-space:pre-wrap}
+.eq .k{color:#F0A868}
+.eq .c{color:#7E93AC}
+.eq b{font-weight:400;color:#8FD3B0}
+
+.dstrip{background:#1B3A5C;border-radius:8px;padding:8px 12px;color:#fff;
+        font-weight:500;font-size:12.6px;line-height:1.4;letter-spacing:-.026em}
+.dstrip .lbl{color:#9DB6D0;display:block;margin-bottom:3px}
+.dstrip b{font-weight:900;color:#FFC79A}
+.dstrip.rd{background:#A0231C} .dstrip.rd .lbl{color:#F3C4BF} .dstrip.rd b{color:#FFD9C2}
+.dstrip.gn{background:#2A6E51} .dstrip.gn .lbl{color:#B6D9C6} .dstrip.gn b{color:#D8F0C9}
+
+table{width:100%;border-collapse:collapse;font-size:12px;letter-spacing:-.02em}
+th{background:#1B3A5C;color:#fff;font-weight:500;font-size:11px;padding:4px 7px;text-align:left}
+td{padding:3.2px 7px;border-bottom:1px solid #E7ECF2;color:#37485E;font-weight:400;
+   word-break:break-word;overflow-wrap:anywhere;line-height:1.3;background:#fff}
+tr.alt td{background:#F7F9FB}
+td b{font-weight:500;color:#14243A}
+th.c,td.c{text-align:center}
+
+.flow{display:flex;align-items:stretch;gap:6px}
+.flow .step{flex:1 1 0;min-width:0;background:#F4F7FA;border-radius:7px;padding:6px 9px;
+            border-left:3px solid #1B3A5C}
+.flow .step.o{border-left-color:#C25610;background:#FDF2EA}
+.flow .step .n{font-weight:500;font-size:9.6px;letter-spacing:.1em;color:#8C9AAC}
+.flow .step .t{font-weight:400;font-size:12.1px;letter-spacing:-.028em;margin-top:2px;line-height:1.26;color:#37485E}
+.flow .step .t b{font-weight:500;color:#14243A}
+
+.li{display:flex;gap:8px;align-items:flex-start;line-height:1.36}
+.li .b{flex:none;width:17px;height:17px;border-radius:5px;background:#E7EDF4;color:#1B3A5C;
+       font-weight:900;font-size:10.2px;display:flex;align-items:center;justify-content:center;margin-top:1.5px}
+.li.r .b{background:#F7D9D5;color:#A0231C}
+.li.g .b{background:#DCEDE4;color:#2A6E51}
+.li.o .b{background:#FBE2CE;color:#C25610}
+
+.chip{display:inline-block;background:#E7EDF4;color:#1B3A5C;border-radius:5px;
+      font-weight:500;font-size:11.2px;padding:2px 7px;letter-spacing:-.012em;margin:0 3px 3px 0}
+.chip.o{background:#FBE2CE;color:#C25610}
+.chip.g{background:#DCEDE4;color:#2A6E51}
+.chip.r{background:#F7D9D5;color:#A0231C}
+.chips{display:flex;flex-wrap:wrap}
+
+.kpi{display:flex;gap:7px}
+.kpi > div{flex:1 1 0;background:#F4F7FA;border-radius:8px;padding:6px 8px;text-align:center}
+.kpi .v{font-weight:900;font-size:19px;letter-spacing:-.045em;line-height:1}
+.kpi .l{font-weight:400;font-size:10.2px;color:#8C9AAC;margin-top:4px;letter-spacing:-.018em;line-height:1.25}
+.kpi .hi{background:#FDF2EA} .kpi .hi .v{color:#C25610}
+
+.two{display:flex;gap:9px}
+.two > div{flex:1 1 0;min-width:0;display:flex;flex-direction:column}
+
+/* 4축 게이지 ─ 비용·검출력·도구의존·왜곡위험 */
+.gau{flex:none;display:flex;gap:6px}
+.gau > div{flex:1 1 0;min-width:0;background:#F4F7FA;border-radius:7px;padding:5px 8px 6px}
+.gau .n{font-weight:500;font-size:9.6px;letter-spacing:.02em;color:#8C9AAC;white-space:nowrap;
+        display:flex;justify-content:space-between}
+.gau .n s{text-decoration:none;font-weight:900;font-size:9.6px;color:#4A5A70}
+.gau .d{display:flex;gap:3px;margin-top:4px}
+.gau .d i{flex:1 1 0;height:5px;border-radius:2px;background:#DDE4EC}
+.gau .d i.on{background:#1B3A5C}
+.gau .d.g i.on{background:#2A6E51}
+.gau .d.o i.on{background:#C25610}
+
+.jd{flex:none;display:flex;gap:6px;align-items:center;font-size:11.6px;letter-spacing:-.022em;
+    font-weight:400;color:#68788E;line-height:1.3}
+.jd em{font-style:normal;font-weight:900;font-size:10.4px;letter-spacing:.04em;border-radius:5px;
+       padding:2.5px 7px;white-space:nowrap;flex:none}
+.jd em.y{background:#DCEDE4;color:#2A6E51}
+.jd em.c{background:#FBE2CE;color:#C25610}
+.jd em.n{background:#F7D9D5;color:#A0231C}
+.jd b{font-weight:500;color:#37485E}
+
+.sp{flex:1 1 0;min-height:0}
+.g3{height:3px;flex:none} .g4{height:4px;flex:none} .g5{height:5px;flex:none}
+.g7{height:7px;flex:none} .g9{height:9px;flex:none}
+
+.pf{flex:none;display:flex;justify-content:space-between;align-items:center;
+    padding-top:8px;margin-top:12px;border-top:1px solid #D5DDE6;
+    font-weight:400;font-size:11.3px;color:#8C9AAC;letter-spacing:.02em}
+.pf b{font-weight:500;color:#4A5A70}
+</style>
+</head>
+<body>
+<!-- ═══════════════════ PAGE 1 ─ 기본 30개는 어떻게 만들었나 ═══════════════════ -->
+<div class="page">
+  <div class="hd">
+    <div class="l">
+      <h1>PalletizOS 스모크 <em>수행 시나리오는 어떻게 만들었나</em></h1>
+      <p>기본 30개는 실제 화면을 자동으로 조사해 설계했고, 추가분은 사람이 눌러 보인 것을 녹화기가 자동으로 시나리오로 바꿉니다</p>
+    </div>
+    <div class="r">
+      작성 <b>2026-10-21</b><br>
+      대상 <b>PalletizOS v1.1.0 · Dr.Dart-Platform 3.7.0</b> (가상 제어기)<br>
+      근거 <b>tools/explore.py · tools/menus/ · flows*.py · recorder.py · scenarios/</b>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="row">
+
+      <!-- ① -->
+      <div class="card">
+        <div class="ch"><div class="no">1</div><h2>한눈에 보기 <span>— 시나리오는 두 종류</span></h2><div class="tag">OVERVIEW</div></div>
+        <div class="cb">
+          <div class="two">
+            <div class="box o"><span class="lbl or">기본 시나리오 30개 · H·R·I·L·S·J·Q·V</span><div class="g4"></div>
+              <div class="txt"><b>도구가 실제 화면을 자동으로 훑어</b> 버튼·표·입력칸 목록을 뽑고, 그 목록을 보고 <b>Claude가 확인 규칙을 설계해 코드로 작성</b>했습니다. 실제로 돌려 보며 맞지 않는 부분을 고쳤습니다.</div></div>
+            <div class="box g"><span class="lbl gn">녹화 시나리오 · C01, C02 …</span><div class="g4"></div>
+              <div class="txt">사람이 앱에서 <b>직접 눌러 보이면</b>, 녹화기가 누른 버튼을 <b>자동으로 알아보고</b> 시나리오 파일로 저장합니다. 코드를 짤 필요가 없고, 다음 실행부터 자동으로 포함됩니다.</div></div>
+          </div>
+          <div class="g9"></div>
+          <div class="kpi">
+            <div><div class="v">7</div><div class="l">조사한 메뉴<br>(Home 포함)</div></div>
+            <div><div class="v">17</div><div class="l">화면 조사 파일<br>(tools/menus)</div></div>
+            <div><div class="v">1,356</div><div class="l">조사로 뽑은<br>화면 요소 줄</div></div>
+            <div class="hi"><div class="v">30</div><div class="l">기본 시나리오</div></div>
+            <div><div class="v">4</div><div class="l">녹화 시나리오<br>(C01~C04)</div></div>
+          </div>
+          <div class="sp"></div>
+          <div class="box r"><div class="tiny"><b class="rd">오해하기 쉬운 점.</b> 기본 30개는 사양서(SR·TC 문서)에서 자동으로 뽑은 것이 <b>아닙니다</b>. 근거는 <b>실제 앱 화면</b>과 <b>실제 동작</b>입니다. 그래서 "화면이 이렇게 동작해야 한다"는 규칙은 화면 자체의 일관성(값 계산·화면 간 일치·로그)에서 나오고, 사양과 다르게 구현된 기능은 잡지 못할 수 있습니다.</div></div>
+        </div>
+      </div>
+
+      <!-- ② -->
+      <div class="card">
+        <div class="ch"><div class="no">2</div><h2>기본 30개를 만든 <em>5단계</em></h2><div class="tag">PROCESS</div></div>
+        <div class="cb">
+          <table>
+            <colgroup><col style="width:6%"><col style="width:20%"><col style="width:14%"><col style="width:60%"></colgroup>
+            <tr><th>#</th><th>단계</th><th>누가</th><th>한 일</th></tr>
+            <tr><td><b>1</b></td><td><b>범위 정하기</b></td><td>사용자</td><td>질문·답으로 결정: <b>PalletizOS 메뉴 전체</b>, 메뉴마다 <b>핵심 기능 2~4개</b>, 가상 제어기만, 되돌릴 수 없는 버튼은 누르지 않음</td></tr>
+            <tr class="alt"><td><b>2</b></td><td><b>화면 자동 조사</b></td><td>도구</td><td><code>explore.py</code>가 메뉴·탭을 차례로 열며 보이는 요소(종류·이름·위치·활성)를 파일로 저장 + 스크린샷</td></tr>
+            <tr><td><b>3</b></td><td><b>확인 규칙 설계</b></td><td>Claude</td><td>조사 결과에서 "눌러서 바뀌는 것"과 "서로 같아야 하는 것"을 골라 기대값 규칙으로 정리 (판정 근거 4종)</td></tr>
+            <tr class="alt"><td><b>4</b></td><td><b>코드로 작성</b></td><td>Claude</td><td>시나리오 하나 = Python 함수 하나 (<code>flows.py</code>, <code>flows_menus.py</code>). 화면 문구는 <code>elements.yaml</code>에 따로</td></tr>
+            <tr><td><b>5</b></td><td><b>실제 실행으로 다듬기</b></td><td>Claude·사용자</td><td>돌려 보고 틀린 가정을 고침. 예: 표 셀은 클릭이 안 먹어 행으로 선택, DO 표가 좌우 2열이라 오른쪽 열 제외, Settings 메뉴가 아이콘으로 접힘</td></tr>
+          </table>
+          <div class="sp"></div>
+          <div class="flow">
+            <div class="step"><div class="n">입력</div><div class="t">사용자 범위 결정</div></div>
+            <div class="step"><div class="n">자동</div><div class="t">화면 요소 목록 17개</div></div>
+            <div class="step"><div class="n">설계</div><div class="t">확인 규칙</div></div>
+            <div class="step"><div class="n">코드</div><div class="t">흐름 함수 30개</div></div>
+            <div class="step o"><div class="n">검증</div><div class="t">10-19 실행 <b>29 PASS / 2 FAIL</b></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+
+      <!-- ③ -->
+      <div class="card">
+        <div class="ch"><div class="no">3</div><h2>화면 자동 조사 <span>— 사람 대신 도구가 화면을 읽는다</span></h2><div class="tag">SURVEY</div></div>
+        <div class="cb">
+          <div class="txt">명령 한 줄로 메뉴를 열고, 화면에 <b>실제로 보이는 요소만</b>(뒤에 가려진 화면 제외) 목록으로 남깁니다. 이미지가 아니라 Windows 접근성 정보(UIA)를 읽기 때문에 이름·숫자·활성 여부가 글자로 나옵니다.</div>
+          <div class="g7"></div>
+          <div class="eq"><span class="c">// 명령: IO 메뉴 → Digital Output 탭을 열고 조사 결과 저장</span>
+<span class="k">python tools/explore.py nav:IO tab:"Digital Output" dump:io_Digital_Output</span>
+<span class="c">// 결과 파일 tools/menus/io_Digital_Output.txt (101줄 중 일부)  [종류] '이름' (위치) 활성</span>
+[Button] 'Digital Output' (1250,28,321x90) en=True
+[Text] 'Port #'   [Text] 'Name'   [Text] 'Value'   [Text] 'Test'
+[Text] '1'  (296,237)    <b>[Text] 'Off'</b>  (795,238)    <b>[Button] 'On'</b>  (902,223) en=True</div>
+          <div class="g9"></div>
+          <div class="lbl">조사한 화면 17개</div><div class="g4"></div>
+          <div class="chips">
+            <span class="chip">Recipes</span><span class="chip">레시피 선택</span><span class="chip">Create Recipe 편집기</span>
+            <span class="chip">IO</span><span class="chip">Modbus Master</span><span class="chip">Digital Input</span><span class="chip">Digital Output</span><span class="chip">Flange IO</span>
+            <span class="chip">Log</span><span class="chip">Settings</span><span class="chip">Conveyor</span><span class="chip">Pallet</span><span class="chip">Tool</span><span class="chip">Slipsheet</span><span class="chip">Account</span><span class="chip">Remote CS</span><span class="chip">Backup &amp; Restore</span>
+          </div>
+          <div class="sp"></div>
+          <div class="tiny">+ Home 화면 전체 구조(<code>tree_home.txt</code>)와 화면 캡처 36장(<code>docs/ui_survey/screens</code>). 인수인계 묶음에 그대로 들어 있습니다.</div>
+        </div>
+      </div>
+
+      <!-- ④ -->
+      <div class="card">
+        <div class="ch"><div class="no">4</div><h2>조사 결과 → 시나리오 <em>바꾸는 법</em></h2><div class="tag">DESIGN</div></div>
+        <div class="cb">
+          <div class="txt">조사 목록에서 <b>"누르면 무엇이 바뀌나"</b>와 <b>"무엇과 같아야 하나"</b>를 찾아 시나리오로 만듭니다. 예: 위 Digital Output 표 → <b>I02</b></div>
+          <div class="g7"></div>
+          <table>
+            <colgroup><col style="width:33%"><col style="width:9%"><col style="width:58%"></colgroup>
+            <tr><th>조사에서 발견한 것</th><th class="c">항목</th><th>만든 확인 규칙</th></tr>
+            <tr><td>1번 행 <b>Value 'Off'</b> 옆에 <b>Test 'On'</b> 버튼</td><td class="c"><b>I02</b></td><td>On 누르면 Value가 On으로 바뀜 + 로그 <code>setDigitalOutput 200 OK</code> → Off로 원복</td></tr>
+            <tr class="alt"><td>Recipes 상단 <b>'3' 'Recipe'</b> 글자 + 목록 행, 한 행에 <b>'In Use'</b></td><td class="c"><b>R01</b></td><td>개수 표시 = 행 수, In Use 레시피 = Home 레시피</td></tr>
+            <tr><td><b>Search</b> 입력칸</td><td class="c"><b>R03</b></td><td>일부 글자 → 해당 행만 / 없는 단어 → 0개 / 지우면 전체 복귀</td></tr>
+            <tr class="alt"><td>행 끝 <b>'menu'</b> 버튼 (⋮)</td><td class="c"><b>R04</b></td><td>메뉴 6개 표시 → ESC로 닫힘 (Delete·Export는 누르지 않음)</td></tr>
+            <tr><td><b>Create Recipe</b> 버튼</td><td class="c"><b>R05</b></td><td>편집기 열림 → X로 닫으면 레시피 수 그대로 (저장 안 함)</td></tr>
+            <tr class="alt"><td>Settings <b>Save</b>가 평소 비활성</td><td class="c"><b>S02</b></td><td>Unit을 바꾸면 Save 활성 → 되돌리면 다시 비활성 (저장 안 함)</td></tr>
+          </table>
+          <div class="sp"></div>
+          <div class="dstrip"><span class="lbl">원칙</span>값을 바꾸는 시나리오는 <b>끝에서 반드시 원래대로 되돌린다</b>. 저장·삭제·내보내기처럼 되돌릴 수 없는 버튼은 <b>"버튼이 있는지"까지만</b> 확인한다.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pf"><span><b>PalletizOS 스모크 자동화</b> · 수행 시나리오 생성 방법</span><span>1 / 2</span></div>
+</div>
+
+
+<!-- ═══════════════════ PAGE 2 ─ 30개 지도 · 녹화 ═══════════════════ -->
+<div class="page">
+  <div class="hd">
+    <div class="l">
+      <h1>30개 시나리오 지도 · <em>녹화로 자동 추가하기</em></h1>
+      <p>메뉴별로 무엇을 확인하는지, 고르는 원칙, 그리고 사람이 누른 순서가 시나리오 파일로 바뀌는 과정</p>
+    </div>
+    <div class="r">
+      작성 <b>2026-10-21</b><br>
+      상세 문서 <b>dart_autotest/MANUAL.md</b> 5장 · 5-1장<br>
+      판정 기준 <b>PalletizOS_스모크_판정기준_261021.pdf</b>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="row">
+
+      <!-- ⑤ -->
+      <div class="card">
+        <div class="ch"><div class="no">5</div><h2>기본 30개 지도 <span>— 메뉴별 핵심 기능</span></h2><div class="tag">MAP</div></div>
+        <div class="cb">
+          <table>
+            <colgroup><col style="width:20%"><col style="width:7%"><col style="width:73%"></colgroup>
+            <tr><th>메뉴</th><th class="c">수</th><th>시나리오</th></tr>
+            <tr><td><b>Home</b> H01~H08</td><td class="c">8</td><td>화면 진입·버전 · Left/Right 토글 · 레시피 선택 · 층 +/− · 박스 +/− · 3D 확대 · Enable/Disable · Release Vacuum·홈 이동</td></tr>
+            <tr class="alt"><td><b>Recipes</b> R01~R05 <span class="chip o">Admin</span></td><td class="c">5</td><td>목록·In Use · 행 선택→정보 패널 · 검색 · ⋮ 메뉴 · Create Recipe 편집기</td></tr>
+            <tr><td><b>IO</b> I01~I04</td><td class="c">4</td><td>탭 5개 전환 · Digital Output 테스트 · Flange 출력 테스트 · Modbus 상태</td></tr>
+            <tr class="alt"><td><b>Log</b> L01~L05 <span class="chip o">Admin</span></td><td class="c">5</td><td>최신 줄 = 앱 로그 파일 · 검색 · 시간 정렬 · 레벨 필터 · 페이지 이동</td></tr>
+            <tr><td><b>Settings</b> S01~S05 <span class="chip o">Admin</span></td><td class="c">5</td><td>General 정보 · 미저장 변경 감지 · 하위 메뉴 8개 · Tool 목록 · Account 목록</td></tr>
+            <tr class="alt"><td><b>기타</b> J01·Q01·V01</td><td class="c">3</td><td>Jog + 패널(탭·J1~J6) · Quick Log 패널 · Recovery 진입·복귀</td></tr>
+          </table>
+          <div class="g9"></div>
+          <div class="lbl">고르는 원칙</div><div class="g4"></div>
+          <div class="li"><div class="b">1</div><div class="txt">메뉴마다 <b>자주 쓰고, 깨지면 바로 티 나는 기능</b> 2~4개 (스모크 = 넓고 얕게)</div></div>
+          <div class="g3"></div>
+          <div class="li"><div class="b">2</div><div class="txt">자동으로 <b>기대값을 계산하거나 다른 화면·로그와 맞춰 볼 수 있는 것</b>만 (눈으로만 판단하는 것은 제외)</div></div>
+          <div class="g3"></div>
+          <div class="li r"><div class="b">3</div><div class="txt"><b>누르지 않는 버튼</b>: Delete · Import · Export · Initialize System · Install New Version · Get Pose/Move To · TeamViewer · Test Run · Clear · Save</div></div>
+          <div class="sp"></div>
+        </div>
+      </div>
+
+      <!-- ⑥ -->
+      <div class="card">
+        <div class="ch"><div class="no">6</div><h2>녹화로 추가 <span>— 누르면 시나리오가 된다</span></h2><div class="tag">RECORD</div></div>
+        <div class="cb">
+          <div class="flow">
+            <div class="step"><div class="n">STEP 1</div><div class="t">표시창 <b>＋ 추가</b> 또는 <code>PalletizOS_record.bat</code></div></div>
+            <div class="step"><div class="n">STEP 2</div><div class="t">이름 적고 <b>● 녹화 시작</b> (자동화는 일시정지)</div></div>
+            <div class="step"><div class="n">STEP 3</div><div class="t">앱에서 <b>평소처럼 클릭</b> → 단계가 쌓임</div></div>
+            <div class="step"><div class="n">STEP 4</div><div class="t"><b>완료</b> → 끝에 보여야 할 문구 고르기</div></div>
+            <div class="step o"><div class="n">STEP 5</div><div class="t"><b>저장</b> → 다음 실행부터 C## 포함</div></div>
+          </div>
+          <div class="g9"></div>
+          <div class="txt"><b>자동으로 일어나는 일</b>: 클릭할 때마다 녹화기가 그 자리의 화면 요소를 읽어 <b>"무엇을 눌렀는지"</b>를 아래 규칙으로 기록합니다. 좌표가 아니라 요소를 기록하므로 창 위치·크기가 달라도 재생됩니다.</div>
+          <div class="g7"></div>
+          <table>
+            <colgroup><col style="width:30%"><col style="width:70%"></colgroup>
+            <tr><th>누른 것</th><th>기록 방법</th></tr>
+            <tr><td>이름 있는 버튼·탭·항목</td><td><b>종류 + 이름 + 같은 이름 중 몇 번째</b> — 예: Button 'Settings'</td></tr>
+            <tr class="alt"><td>이름 없는 아이콘 버튼</td><td>가장 가까운 이름 있는 요소 기준 <b>상대 위치</b> — 예: 'Release Vacuum' 기준 −182, −47</td></tr>
+            <tr><td>접힌 좌측 메뉴 아이콘</td><td>펼쳤을 때의 <b>메뉴 이름</b>으로 바꿔 기록</td></tr>
+            <tr class="alt"><td>입력칸에 친 글자</td><td>값이 바뀐 것을 감지해 <b>"입력" 단계</b>로 기록 · <b class="rd">비밀번호는 기록 안 함</b></td></tr>
+          </table>
+          <div class="sp"></div>
+          <div class="tiny">기록하지 않는 것: 드래그 · 스크롤 · 앱 바깥 클릭. 녹화한 계정이 Admin이면 실행 때 자동으로 Admin 전환 후 재생.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+
+      <!-- ⑦ -->
+      <div class="card">
+        <div class="ch"><div class="no">7</div><h2>저장되는 시나리오 파일 <span>— 실제 C04</span></h2><div class="tag">FILE</div></div>
+        <div class="cb">
+          <div class="txt"><code>scenarios/C04_개동.json</code> — 2026-10-21 14:16에 Admin 계정으로 녹화한 6단계 (일부)</div>
+          <div class="g7"></div>
+          <div class="eq">{ "id": "C04", "title": "개동", "admin": true, "recorded_role": "Admin",
+  "steps": [
+    { "type": "Button", "name": "<b>English</b>", "nth": 0, "action": "click" },
+    { "type": "Button", "name": "",  <span class="c">// 이름 없는 아이콘</span>
+      "anchor": { "name": "<b>Release Vacuum</b>" }, "offset": [<span class="k">-182</span>, <span class="k">-47</span>] },
+    { "type": "Button", "name": "<b>Settings</b>" },  { … "<b>Pallet</b>" },  { … "<b>Tool</b>" },  { … "<b>Slipsheet</b>" }
+  ],
+  "expects": []   <span class="c">// 끝에 보여야 할 문구 — 비어 있음</span> }</div>
+          <div class="g9"></div>
+          <div class="two">
+            <div class="box"><span class="lbl">재생할 때</span><div class="g3"></div><div class="tiny">Home에서 출발 → 단계마다 같은 요소를 <b>6초 안에 찾아</b> 누름 → 누른 뒤 <b>새 에러 문구가 없어야</b> 함 → 끝에 고른 문구가 모두 보여야 PASS</div></div>
+            <div class="box"><span class="lbl">관리</span><div class="g3"></div><div class="tiny"><code>PalletizOS_scenarios.bat</code>에서 이름 변경 · 단계 삭제 · 실행 포함 여부 · 삭제(휴지통 폴더로) · ▶ 이것만 실행</div></div>
+          </div>
+          <div class="sp"></div>
+        </div>
+      </div>
+
+      <!-- ⑧ -->
+      <div class="card">
+        <div class="ch"><div class="no">8</div><h2>두 방식 비교 · <em>지금의 한계</em></h2><div class="tag">COMPARE</div></div>
+        <div class="cb">
+          <table>
+            <colgroup><col style="width:22%"><col style="width:39%"><col style="width:39%"></colgroup>
+            <tr><th></th><th>기본 30개 (조사 + 설계)</th><th>녹화 시나리오</th></tr>
+            <tr><td><b>만드는 사람</b></td><td>Claude (코드 작성)</td><td>누구나 (클릭만)</td></tr>
+            <tr class="alt"><td><b>확인 깊이</b></td><td><b class="gn">값 계산·화면 간 일치·로그</b>까지</td><td>요소가 있고 눌리는지 + 에러 문구 없음 + (고른) 문구 표시</td></tr>
+            <tr><td><b>원상복구</b></td><td>시나리오가 직접 되돌림 + 러너가 Home 값 확인</td><td>러너가 Home 값만 되돌림 → <b class="rd">IO 출력·설정 변경은 직접 되돌리는 클릭까지 녹화</b></td></tr>
+            <tr class="alt"><td><b>화면이 바뀌면</b></td><td>코드·<code>elements.yaml</code> 수정</td><td>다시 녹화</td></tr>
+          </table>
+          <div class="g9"></div>
+          <div class="box r"><span class="lbl rd">지금 녹화본 4개의 한계</span><div class="g3"></div>
+            <div class="tiny">C01~C04 모두 <b>"끝에 보여야 할 문구"를 고르지 않았습니다</b>(expects 0개). 그래서 지금은 <b>"버튼을 찾아 눌렀고 에러 문구가 안 떴다"</b>까지만 확인합니다. 화면이 잘못 바뀌어도 PASS가 나올 수 있습니다.</div></div>
+          <div class="g7"></div>
+          <div class="dstrip gn"><span class="lbl">권장</span>녹화를 마칠 때 <b>그 동작의 결과로 나타나는 문구</b>(예: 열린 화면의 제목, 바뀐 값)를 1~2개 꼭 고르세요. 그래야 녹화 시나리오도 "제대로 동작했는지"를 판정합니다.</div>
+          <div class="sp"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pf"><span><b>PalletizOS 스모크 자동화</b> · 수행 시나리오 생성 방법</span><span>2 / 2</span></div>
+</div>
+
+</body>
+</html>
