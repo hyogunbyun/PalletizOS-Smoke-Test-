@@ -461,6 +461,12 @@ def main():
         src = STOP_FILE.read_text(encoding="utf-8").strip() if STOP_FILE.exists() else ""
         ev("종료 요청 받음 → 원상복구 후 중단" + (f" (요청 내용: {src})" if src and src != "stop" else " (요청한 곳은 같은 파일의 바로 앞 줄 참고)"))
         STOP_FILE.unlink(missing_ok=True)  # 복구하는 동안 다시 멈추지 않게
+        if src in ("", "stop"):  # 표시창 ■ 종료 (칩 두 번 = 그 항목만 실행 요청은 제외) → 감시기가 이 버전을 다시 자동 실행하지 않게
+            try:
+                (STOP_FILE.parent / "user_stop.json").write_text(json.dumps(
+                    {"version": expect, "at": datetime.now().isoformat(timespec="seconds")}, ensure_ascii=False), encoding="utf-8")
+            except OSError:
+                pass
         run["stopped"] = True
         run["notes"].insert(0, "사용자가 자동화를 종료함")
         log("종료 요청 → 원래 상태로 되돌리는 중")

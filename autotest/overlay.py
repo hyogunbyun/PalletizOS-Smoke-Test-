@@ -85,19 +85,11 @@ if MODE != "mouse":  # 백그라운드 방식은 자동화가 마우스를 안 �
         return pt.x, pt.y
 
     def on_stop():
-        now = time.time()
-        gap = now - _arm["t"]
-        if gap > 3:  # 실수 방지: 첫 번째 누름 = 확인 대기
-            _arm["t"] = now
-            evlog(f"■ 자동화 종료 첫 번째 누름 (마우스 {_cursor()}) → 확인 대기")
-            stop_btn.config(text="한번 더", bg="#b45309")
-            root.after(3000, lambda: stop_btn.config(text="■ 종료", bg="#3a4252") if stop_btn["text"] != "종료 중" else None)
+        # 한 번 누르면 바로 종료 (2026-11-02 사용자 요청: 두 번 누르기 규칙 때문에 안 멈춘다고 느낌 — 로그에 무시된 누름 다수).
+        # 종료한 버전은 감시기가 다시 자동 실행하지 않는다 (run_smoke 가 results/user_stop.json 기록)
+        if stop_btn["text"] == "종료 중":
             return
-        if gap < 0.6:
-            # 빠른 더블클릭은 종료로 치지 않음 — 표시창을 옮기려고 위쪽을 두 번 누른 경우 등 (2026-10-22 '안 눌렀는데 종료됨')
-            evlog(f"■ 자동화 종료 빠른 더블클릭({gap:.2f}초) 무시 — 0.6~3초 사이에 다시 눌러야 종료")
-            return
-        evlog(f"■ 자동화 종료 확인 누름 ({gap:.1f}초 뒤, 마우스 {_cursor()}) → stop.flag")
+        evlog(f"■ 종료 누름 (마우스 {_cursor()}) → stop.flag · 이 버전은 자동으로 다시 시작하지 않음")
         STOP.write_text("stop", encoding="utf-8")
         stop_btn.config(text="종료 중", state="disabled", bg="#6b7280")
 

@@ -278,7 +278,16 @@ class UI:
         if self.on_click:
             self.on_click(label or f"입력: {text!r}")
         if self.mode == "background":
-            edit.iface_value.SetValue(text)
+            # 화면이 다시 그려진 직후엔 찾아 둔 입력칸이 낡아 ValuePattern 이 COM 오류를 냄 (2026-11-02 08:22 IP 입력, 실행기 오류로 중단)
+            # → 잠깐 쉬고 몇 번 더, 끝내 안 되면 실행기 오류가 아니라 환경 오류로 올려 호출부가 다시 찾게 함
+            for i in range(3):
+                try:
+                    edit.iface_value.SetValue(text)
+                    break
+                except Exception as e:  # noqa: BLE001  COMError · NoPatternInterfaceError
+                    if i == 2:
+                        raise EnvError(f"입력칸에 값을 넣지 못함 ({label or text}): {type(e).__name__}") from e
+                    time.sleep(0.8)
         else:
             from pywinauto import keyboard
             self.click(edit, settle=0.3, label=label)

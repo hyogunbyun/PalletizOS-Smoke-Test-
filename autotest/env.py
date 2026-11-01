@@ -262,12 +262,21 @@ def _connect_manual(ui, log, on_connect):
 
     if not ui.wait_for(lambda: bool(edits()), 8):
         raise EnvError("IP 입력칸이 나타나지 않음")
-    es, ip = edits(), PF["sim_ip"]
-    if len(es) >= 4 and all(e.element_info.rectangle.top == es[0].element_info.rectangle.top for e in es[:4]):
-        for e, part in zip(es[:4], ip.split(".")):  # 옥텟 4칸 입력
-            ui.set_text(e, part, label=f"IP {part}")
-    else:
-        ui.set_text(es[0], ip, label=f"IP {ip}")
+    ip = PF["sim_ip"]
+    for attempt in range(3):  # 입력칸이 다시 그려져 낡으면 새로 찾아 처음부터 (2026-11-02 08:22)
+        time.sleep(1.0 if attempt else 0.5)
+        es = edits()
+        try:
+            if len(es) >= 4 and all(e.element_info.rectangle.top == es[0].element_info.rectangle.top for e in es[:4]):
+                for e, part in zip(es[:4], ip.split(".")):  # 옥텟 4칸 입력
+                    ui.set_text(e, part, label=f"IP {part}")
+            else:
+                ui.set_text(es[0], ip, label=f"IP {ip}")
+            break
+        except EnvError as ex:
+            if attempt == 2:
+                raise
+            log(f"IP 입력 다시 시도 ({ex})")
     btn = ui.win_button(PF["connect"])
     if btn is None or not ui.wait_for(lambda: ui.win_button(PF["connect"]).is_enabled(), 8):
         raise EnvError("IP를 넣었는데 '연결' 버튼이 활성화되지 않음")

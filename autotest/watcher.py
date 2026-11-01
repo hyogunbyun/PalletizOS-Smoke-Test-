@@ -104,6 +104,14 @@ def _adopt_manual_run(ver, st):
     return False
 
 
+def _user_stopped():
+    """표시창 ■ 종료로 멈춘 버전 기록 (run_smoke 가 씀). 없으면 None."""
+    try:
+        return json.loads((RES / "user_stop.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
 def check_once():
     from autotest.installer import install_dm, installed_version
     st = load_state()
@@ -118,6 +126,10 @@ def check_once():
     ver, rel, asset = nb
     cur = installed_version()
     if cur and vkey(ver) <= vkey(cur):
+        us = _user_stopped()
+        if ver == cur and us and us.get("version") in (ver, "v" + ver):
+            wlog(f"{ver}: 사용자가 ■ 종료로 멈춘 버전 ({us.get('at', '')}) → 자동으로 다시 시작하지 않음 (다음 새 버전부터 다시 자동)")
+            return
         if ver == cur and not st["done"].get(ver, {}).get("valid"):
             # 설치는 됐는데 유효한 평가가 없음 → 돌고 있는 실행이 끝나길 기다렸다가, 그 결과가 유효하면 인정, 아니면 스모크만 다시
             while smoke_running():
