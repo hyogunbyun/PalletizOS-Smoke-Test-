@@ -191,6 +191,7 @@ def _install(path, log):
             after = installed_version()
             ev(f"설치 성공: {path.name} → PalletizOS {after}")
             log(f"설치 성공 → PalletizOS {after}")
+            env.close_platform_settings(ui, log)  # Settings 상세를 남기면 이어지는 평가가 엉뚱한 'PalletizOS' 아이콘을 누름 (11-02)
             return after
         bad = next((l for l in lines if FAIL_PAT.search(l)), None)
         if bad:

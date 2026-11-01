@@ -300,6 +300,31 @@ def _skip_tour(ui):
         ui.click(b, settle=1.5)
 
 
+def close_platform_settings(ui, log=print):
+    """Platform 'Settings' 탭이 열려 있으면 탭의 X 로 닫는다. 닫았으면 True.
+
+    설치(Install from File) 뒤 Settings > 설치된 모듈 리스트 > PalletizOS 상세가 그대로 남는데, 그 상세의 모듈 아이콘도
+    이름이 'PalletizOS' 인 Image 라 Home 타일로 잘못 눌러 3분 기다리다 환경 오류 41 (2026-11-02 08:16, 2.0.0-25)."""
+    try:
+        w = ui.wrapper()
+        btns = [b for b in w.descendants(control_type="Button") if b.rectangle().top < 200]
+        tab = next((b for b in btns if (b.window_text() or "").strip() in ("Settings", "설정")), None)
+        if tab is None:
+            return False
+        tr = tab.rectangle()
+        x = next((b for b in btns if not (b.window_text() or "").strip() and b is not tab
+                  and tr.left <= b.rectangle().left and b.rectangle().right <= tr.right
+                  and tr.top <= b.rectangle().top and b.rectangle().bottom <= tr.bottom), None)
+        if x is None:
+            return False
+        ui.click(x, settle=2, label="Platform Settings 탭 닫기")
+        log("Platform Settings 탭 닫음 (설치 뒤 남은 화면)")
+        return True
+    except Exception as e:  # noqa: BLE001
+        log(f"Platform Settings 탭 닫기 실패: {e}")
+        return False
+
+
 def _open_palletizos(ui, log):
     try:
         ui.root()
@@ -309,6 +334,7 @@ def _open_palletizos(ui, log):
     _login_if_needed(ui, log, wait=1)
     if ui.wait_for(lambda: ui.root() is not None, timeout=2):
         return
+    close_platform_settings(ui, log)  # Settings 상세의 'PalletizOS' 아이콘을 Home 타일로 잘못 누르지 않게
     log("PalletizOS 열기")
     w = ui.wrapper()
     tile = next((i for i in w.descendants(control_type="Image") if i.window_text() == PF["palletizos_tile"]), None)
