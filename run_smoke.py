@@ -462,11 +462,19 @@ def main():
         ev("종료 요청 받음 → 원상복구 후 중단" + (f" (요청 내용: {src})" if src and src != "stop" else " (요청한 곳은 같은 파일의 바로 앞 줄 참고)"))
         STOP_FILE.unlink(missing_ok=True)  # 복구하는 동안 다시 멈추지 않게
         if src in ("", "stop"):  # 표시창 ■ 종료 (칩 두 번 = 그 항목만 실행 요청은 제외) → 감시기가 이 버전을 다시 자동 실행하지 않게
+            # 버전을 입력 안 하고 돌린 실행이면 expect 가 없음 → 앱 로그의 설치 버전으로 (2026-11-02 08:53: None 으로 저장돼
+            # 앞선 2.0.0-25 종료 기록을 덮어써 감시기가 08:55 에 다시 실행함)
             try:
-                (STOP_FILE.parent / "user_stop.json").write_text(json.dumps(
-                    {"version": expect, "at": datetime.now().isoformat(timespec="seconds")}, ensure_ascii=False), encoding="utf-8")
-            except OSError:
-                pass
+                from autotest.installer import installed_version
+                stop_ver = (expect or "").lstrip("v") or installed_version()
+            except Exception:  # noqa: BLE001
+                stop_ver = (expect or "").lstrip("v") or None
+            if stop_ver:
+                try:
+                    (STOP_FILE.parent / "user_stop.json").write_text(json.dumps(
+                        {"version": stop_ver, "at": datetime.now().isoformat(timespec="seconds")}, ensure_ascii=False), encoding="utf-8")
+                except OSError:
+                    pass
         run["stopped"] = True
         run["notes"].insert(0, "사용자가 자동화를 종료함")
         log("종료 요청 → 원래 상태로 되돌리는 중")
