@@ -46,6 +46,11 @@ def _e(s):
     return html.escape(str(s if s is not None else ""))
 
 
+# 리포트 제목 — TC 자동 평가(tc_run.py)가 바꿔 씀, 스모크는 그대로
+TITLE = "PalletizOS Home 스모크 결과"
+PAGE_TITLE = "PalletizOS 스모크"
+
+
 def write_report(run, outdir: Path, hist):
     v = run["verdict"]
     rows = []
@@ -96,9 +101,9 @@ def write_report(run, outdir: Path, hist):
                   f"<div class='wrap'><table><tr><th>서명 (숫자는 #)</th></tr>{items}</table></div>")
 
     doc = f"""<!doctype html><html lang="ko"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>PalletizOS 스모크</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>{PAGE_TITLE}</title>
 <style>{CSS}</style></head><body data-run="{_e(outdir.name)}"><main>
-<h1>PalletizOS Home 스모크 결과</h1>
+<h1>{TITLE}</h1>
 <div class="sub">{_e(run["started"].replace("T", " "))} ~ {_e((run.get("finished") or "진행 중")[11:] or "진행 중")} · 가상 제어기 127.0.0.1 (dev-simulator)</div>
 <div class="hero"><span class="badge {VERDICT_CLS.get(v, 'na')}">{_e(v)}</span>
 <div class="meta">

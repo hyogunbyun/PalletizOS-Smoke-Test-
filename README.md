@@ -30,7 +30,7 @@ Dr.Dart-Platform의 PalletizOS 모듈을 **가상 제어기**에서 자동으로
 - 결과: `results\<날짜_시각>\report.html`, 사건 기록 `results\events.log`
 
 ## 3-1. TC·체크리스트 자동 평가 (별도 툴 — 스모크와 독립)
-- 바탕화면 **`PalletizOS_TC_import.bat`**(또는 `tc_import.bat`) → **[엑셀 가져오기…]** → 행마다 자동 점검 루틴 매칭 결과 미리보기 → **[자동 평가 시작]**
+- 바탕화면 **`PalletizOS_TC_Execute.bat`**(또는 `tc_import.bat`) → **[엑셀 가져오기…]** → 행마다 자동 점검 루틴 매칭 결과 미리보기 → **[자동 평가 시작]**
 - 사내 표준 TC 양식(8행 머리글 B~AD)과 자유 양식 체크리스트(머리글에 `기대결과/Expect` 열, 또는 `점검 내용`+`결과` 열) 모두 읽음
 - 결과는 원본을 건드리지 않고 원본 옆 **`<이름>_자동판정_<시각>.xlsx`** 사본에 기록: Result(Pass/Fail/NT)·Comment(`[자동] 근거`)·Tester·Test Date. 결과 열이 없는 체크리스트는 오른쪽에 '자동 판정·판정 근거·판정 일시' 열을 덧붙임
 - 자동 점검 루틴이 없는 행은 **NT + 수동 사유**(Move To·Start·Super Admin 권한·Save 필요 등)

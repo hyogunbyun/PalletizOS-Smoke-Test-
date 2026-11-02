@@ -109,6 +109,8 @@ def main():
         key2tc[c["key"]] = tc
         flows.append({"tc": tc, "title": c["title"], "desc": c["desc"], "fn": c["fn"], "admin": c["admin"]})
         rs.SHORT[tc] = SHORT.get(c["key"], c["title"][:8])
+    import autotest.report as report
+    report.TITLE, report.PAGE_TITLE = "PalletizOS Test Case 실행 결과", "PalletizOS Test Case"
     rs.FLOWS = flows
     rs.RESULTS = ROOT / "results" / "tc"
     rs.HISTORY = rs.RESULTS / "history.json"

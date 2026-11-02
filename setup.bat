@@ -26,12 +26,12 @@ set "DT=%USERPROFILE%\Desktop"
 > "%DT%\PalletizOS_smoke.bat" echo @call "%~dp0run_smoke.bat" %%*
 > "%DT%\PalletizOS_record.bat" echo @call "%~dp0record.bat"
 > "%DT%\PalletizOS_scenarios.bat" echo @call "%~dp0scenarios.bat"
-> "%DT%\PalletizOS_TC_import.bat" echo @call "%~dp0tc_import.bat" %%*
+> "%DT%\PalletizOS_TC_Execute.bat" echo @call "%~dp0tc_import.bat" %%*
 echo.
 echo 설치가 끝났습니다. 다음 순서로 진행하세요 (자세한 내용은 README.md):
 echo   1) Admin 비밀번호 한 번 저장:  .venv\Scripts\python.exe -m autotest.secret set
 echo   2) 스모크 실행:                 바탕화면 PalletizOS_smoke.bat
-echo      TC·체크리스트 자동 평가:     바탕화면 PalletizOS_TC_import.bat
+echo      TC·체크리스트 자동 평가:     바탕화면 PalletizOS_TC_Execute.bat
 echo   3) (선택) JIRA 이슈 등록:      jira_setup.bat
 echo   4) (선택) 데일리 빌드 자동:    github_setup.bat  다음  watch_start.bat
 echo.
