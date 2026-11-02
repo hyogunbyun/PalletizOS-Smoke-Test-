@@ -27,7 +27,10 @@ from tc_autotest.workbook import read_rows, write_results  # noqa: E402
 DEFAULT_WB = ROOT.parent / "tc" / "PalletizOS TC" / "PalletizOS_v2.0.0-21_Change_TC_V1.0.xlsx"
 SHORT = {"CFG_DEFAULT": "툴설정 기본", "CFG_ADDZONE": "Add Zone", "CFG_NODEL": "존 삭제", "IO_LIFT_OFF": "Lift 이름",
          "SLIP_LABELS": "슬립 문구", "SLIP_HELP_SEEK": "Seek 도움말", "SLIP_HELP_RETRACT": "Retract 도움말",
-         "MODEL_POPUP": "3D 팝업", "SMOKE_MONITOR": "스모크 H04·05", "SMOKE_TOOLLIST": "스모크 S04", "SMOKE_ALL": "스모크 전체"}
+         "MODEL_POPUP": "3D 팝업", "SMOKE_MONITOR": "스모크 H04·05", "SMOKE_TOOLLIST": "스모크 S04", "SMOKE_ALL": "스모크 전체",
+         "SD024_01": "024 기본", "SD024_02": "024 저장", "SD024_03": "024 Type", "SD024_04": "024 경계",
+         "SD024_05": "024 이탈", "SD024_06": "024 단위",
+         "TIO_04": "빈 주소", "TIO_05": "Reducer 빈", "TIO_06": "Blow off", "TIO_07": "주소 중복", "TIO_08": "Double", "TIO_09": "신호 타입"}
 
 
 def plan(path):
@@ -60,17 +63,29 @@ def _to_home_if_open():
         if not env.app_running():
             return
         ui = UI()
-        ui.root()
-        if not ui.on_home():
-            home = sorted([b for b in ui.wrapper().descendants(control_type="Button")
-                           if not b.window_text() and b.rectangle().left - ui.wrapper().rectangle().left < 40
-                           and b.rectangle().width() > 0], key=lambda b: b.rectangle().top)
-            for b in home[1:3]:  # 왼쪽 메뉴 맨 위(계정) 다음이 Home
-                ui.click(b, settle=2.5, label="Home")
-                if ui.on_home():
-                    break
-            if not ui.on_home():
-                ui.back_to_home()
+        w = ui.wrapper()
+        names = lambda: {e.window_text() for e in w.descendants() if e.element_info.rectangle.width() > 0}  # noqa: E731
+        # 열린 계정 메뉴·팝업 닫기 (11-02 10:54: 계정 메뉴가 열린 채 Settings 전체화면 → 환경 준비가 PalletizOS 를 못 찾음)
+        if "Change Account" in names():
+            acct = next((b for b in w.descendants(control_type="Button") if len(b.window_text() or "") == 1
+                         and b.rectangle().top < w.rectangle().top + 150), None)
+            if acct is not None:
+                ui.click(acct, settle=1.5, label="계정 메뉴 닫기")
+        if "Unsaved Changes" in names():
+            ui.click(next(b for b in w.descendants(control_type="Button") if b.window_text() == "Discard & Exit"), settle=2.5)
+        try:
+            on_home = ui.on_home()
+        except Exception:  # noqa: BLE001  Settings 전체화면이면 root() 가 없음
+            on_home = False
+        if not on_home:
+            left = w.rectangle().left
+            rail = sorted([b for b in w.descendants(control_type="Button")
+                           if not b.window_text() and b.rectangle().left - left < 40 and b.rectangle().width() > 0
+                           and b.rectangle().top < w.rectangle().top + 650], key=lambda b: b.rectangle().top)
+            if rail:  # 왼쪽 메뉴 맨 위(계정 버튼 다음) = Home
+                ui.click(rail[0], settle=2.5, label="Home")
+                if "Unsaved Changes" in names():
+                    ui.click(next(b for b in w.descendants(control_type="Button") if b.window_text() == "Discard & Exit"), settle=2.5)
             print("PalletizOS 를 Home 화면으로 돌림")
     except Exception as e:  # noqa: BLE001  못 돌려도 실행기의 환경 준비가 다시 시도함
         print(f"Home 으로 돌리지 못함 ({type(e).__name__}) — 환경 준비에서 다시 시도")
@@ -81,11 +96,17 @@ def main():
     ap.add_argument("workbook", nargs="?", default=str(DEFAULT_WB))
     ap.add_argument("--dry", action="store_true", help="매칭 결과만 출력")
     ap.add_argument("--no-open", action="store_true", help="끝나고 결과 엑셀을 열지 않음")
+    ap.add_argument("--keys", help="이 루틴만 실행 (쉼표로 구분, 예: TIO_04,TIO_07) — 나머지 행은 NT")
     a = ap.parse_args()
     wb = Path(a.workbook).resolve()
     if not wb.exists():
         sys.exit(f"엑셀 파일이 없음: {wb}")
     rows = plan(wb)
+    if a.keys:
+        keep = set(a.keys.split(","))
+        for x in rows:
+            if x["check"] and x["check"] not in keep:
+                x["check"] = None
     used = [c for c in CHECKS if any(x["check"] == c["key"] for x in rows)]
     print("=" * 60)
     print(f" TC 자동 평가 · {wb.name}")
@@ -112,6 +133,9 @@ def main():
     import autotest.report as report
     report.TITLE, report.PAGE_TITLE = "PalletizOS Test Case 실행 결과", "PalletizOS Test Case"
     rs.FLOWS = flows
+    import tc_autotest.fginput as fginput
+    fginput.HIDE_OVERLAY = rs.LIVE.hide
+    os.environ["SMOKE_NO_FOCUS_GUARD"] = "1"  # 숫자 입력·드롭다운은 앱을 잠깐 앞으로 가져옴 (fginput.Foreground 가 되돌림)
     rs.RESULTS = ROOT / "results" / "tc"
     rs.HISTORY = rs.RESULTS / "history.json"
     rs.RESULTS.mkdir(parents=True, exist_ok=True)
@@ -139,7 +163,11 @@ def main():
         if x["check"]:
             r = res.get(key2tc[x["check"]], {})
             x["status"] = r.get("status", "env")
-            x["msg"] = (r.get("msg") or {"pass": "통과", "fail": "실패"}.get(x["status"], "판정 못 함")) + f" · 루틴 {x['check']}"
+            msg = r.get("msg") or {"pass": "통과", "fail": "실패"}.get(x["status"], "판정 못 함")
+            if x["status"] in ("pass", "warn", "flaky") and msg.startswith("[부분]"):
+                # 자동으로 확인한 단계는 모두 통과, 눈으로 볼 기대(3D 색·질감 등)만 남음 → Result 는 NT, 근거에 명시
+                x["status"], msg = "partial", "자동 부분 통과 — " + msg[len("[부분]"):].strip()
+            x["msg"] = msg + f" · 루틴 {x['check']}"
         else:
             x["status"], x["msg"] = "na", nt_reason(x["text"])
     dest = write_results(wb, rows, dest_dir=wb.parent)
@@ -150,13 +178,13 @@ def main():
         pass
     cnt = {}
     for x in rows:
-        k = {"pass": "Pass", "warn": "Pass", "flaky": "Pass", "fail": "Fail"}.get(x["status"], "NT")
+        k = {"pass": "Pass", "warn": "Pass", "flaky": "Pass", "fail": "Fail", "partial": "부분(NT)"}.get(x["status"], "NT")
         cnt[k] = cnt.get(k, 0) + 1
     summary = {"workbook": str(wb), "result_workbook": str(dest), "result_dir": outdir.name, "counts": cnt,
                "rows": [{k: x.get(k) for k in ("sheet", "row", "no", "title", "check", "status", "msg")} for x in rows]}
     (outdir / "tc_summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=1), encoding="utf-8")
     print()
-    print(f"판정 기록 완료: Pass {cnt.get('Pass', 0)} · Fail {cnt.get('Fail', 0)} · NT {cnt.get('NT', 0)}")
+    print(f"판정 기록 완료: Pass {cnt.get('Pass', 0)} · Fail {cnt.get('Fail', 0)} · 부분 자동(NT) {cnt.get('부분(NT)', 0)} · NT {cnt.get('NT', 0)}")
     print(f"결과 엑셀: {dest}")
     if not a.no_open:
         try:

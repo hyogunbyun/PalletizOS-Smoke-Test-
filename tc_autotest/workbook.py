@@ -77,6 +77,8 @@ def read_rows(path):
                 continue
             blank = 0
             no = ws.cell(r, cols["no"]).value if "no" in cols else r - hr
+            if "no" in cols and str(no or "").strip() in ("", "-", "—"):
+                continue  # 'SD021. PalletizOS Jog Screen' 같은 구분(섹션) 행 — TC 아님 (11-02 Lite V2.1 에서 TC 로 셈)
             out.append({"sheet": ws.title, "row": r, "no": no, "text": " | ".join(texts),
                         "title": " / ".join(str(vals[c]) for c in vals if vals[c] not in (None, "") and
                                             heads.get(c, "").startswith(("traceability", "function", "항목", "title", "test case", "점검항목", "구분", "기능")))[:160]
@@ -84,14 +86,15 @@ def read_rows(path):
     return out
 
 
-STATUS_TEXT = {"pass": "Pass", "warn": "Pass", "flaky": "Pass", "fail": "Fail", "na": "NT", "env": "NT"}
+STATUS_TEXT = {"pass": "Pass", "warn": "Pass", "flaky": "Pass", "fail": "Fail", "na": "NT", "env": "NT", "partial": "NT"}
 
 
 def write_results(src, rows, dest_dir=None):
     """rows: read_rows 결과에 status/msg 를 붙인 것. 사본 경로를 돌려준다."""
     src = Path(src)
     stamp = datetime.now().strftime("%Y%m%d_%H%M")
-    dest = Path(dest_dir or src.parent) / f"{src.stem}_자동판정_{stamp}{src.suffix}"
+    stem = re.sub(r"(_자동판정_\d{8}_\d{4})+$", "", src.stem)  # 이미 판정한 사본을 다시 가져와도 이름이 길어지지 않게
+    dest = Path(dest_dir or src.parent) / f"{stem}_자동판정_{stamp}{src.suffix}"
     shutil.copyfile(src, dest)
     wb = openpyxl.load_workbook(dest)  # 수식·서식·드롭다운 유지
     today = datetime.now().strftime("%Y.%m.%d")

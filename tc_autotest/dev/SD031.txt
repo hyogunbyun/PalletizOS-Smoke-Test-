@@ -1,0 +1,461 @@
+=== SD031 No 1 | DRL Viewer / Viewer 구성 · 읽기 전용 · Super Admin 레일 없음 | 자동화여부=X 수동=O
+[전제] 1. PalletizOS V2 모듈이 설치된 장비에 전원이 인가되고 모듈이 기동된 상태
+2. Local PC에 제어권이 이전된 상태
+3. 하기의 계정으로 로그인한 상태
+- 계정 : Super Admin
+4. UI 언어가 한국어인 상태
+5. 사이트 값이 하나도 저장되지 않은 상태
+[데이터] None
+[절차] 1. 로고를 10회 눌러 개발자 레일을 연다.
+2. Settings › Engineering 화면 상단 버튼을 확인하고 DRL Viewer 버튼을 누른다.
+3. 다이얼로그 헤더 · 왼쪽 탐색기 · 하단을 확인한다.
+4. Engineering DB 구역을 펼치고 Final code 를 확인한다.
+5. Final code 영역을 누르고 문자를 입력한 뒤 Ctrl+F 를 누른다.
+6. Output 의 Decompress LAYERS/POS_LIST 스위치를 켠다.
+7. OK 버튼을 누른다.
+[기대] 1. 개발자 레일이 열리지 않는지 확인
+2. 버튼이 하기의 이름으로 표시되고 DRL Editor 버튼이 없는지 확인
+- "DRL Viewer"
+3. 제목이 DRL Viewer 이고 Main · Sub · Final 탭과 눈 버튼이 없으며, 탐색기에 Output(Final Code) · Engineering DB 구역만 있고 Files 구역이 없으며, 하단에 Line Break · OK 만 있는지 확인
+4. 하기의 문구가 표시되고 Final code 에 '@override' 주석이 없는지 확인
+- "No values saved in Engineer Setting"
+5. 문자가 입력되지 않고, 검색창은 열리지만 바꾸기(Replace) 칸이 없는지 확인
+6. LAYERS 데이터가 층마다의 POS_LIST 와 함께 JSON 으로 펼쳐 표시되는지 확인
+7. DRL Viewer 가 닫히고 Settings › Engineering 화면으로 돌아오는지 확인
+
+=== SD031 No 2 | Engineering 저장 / 사이트 값 저장 → Viewer · Editor 표시와 행 이동 | 자동화여부=X 수동=O
+[전제] 1. PalletizOS V2 모듈이 설치된 장비에 전원이 인가되고 모듈이 기동된 상태
+2. Local PC에 제어권이 이전된 상태
+3. 하기의 계정으로 로그인한 상태
+- 계정 : Internal
+4. 엔지니어링 변수 vel_j_low 의 DRL 값이 100(범위 0~200)인 상태
+5. 사이트 값이 하나도 저장되지 않은 상태
+[데이터] 1. vel_j_low : 80
+[절차] 1. Settings › Engineering 화면에서 vel_j_low 를 Test Data 의 값으로 바꾸고 Save 한다.
+2. Settings › Engineering 화면에서 DRL Viewer 버튼을 누른다. vel_j_low 줄과 Engineering DB 구역을 확인한다.
+3. Engineering DB 의 vel_j_low 행을 누르고 OK 로 닫는다.
+4. 로고를 10회 눌러 개발자 레일을 연다. 개발자 레일에서 DRL Editor 버튼을 누른다. main.drl 의 vel_j_low 줄을 확인하고 DB 뱃지를 누른다.
+5. Files 의 sub.drl 을 연 상태에서 Engineering DB 의 vel_j_low 행을 누른다.
+[기대] 1. 저장되는지 확인
+2. 하기의 문구가 DRL 과 같은 줄 번호에 표시되고, Engineering DB 이름 옆에 개수 · 상단 안내 문구 · vel_j_low 80 · 'Replaces DRL 100' 이 표시되는지 확인
+- "vel_j_low = 80  # @override(db) drl=100"
+- "Values saved in Engineer Setting. Final Code uses them instead of the DRL value."
+3. Final code 가 vel_j_low 줄로 이동하는지 확인
+4. main.drl 텍스트는 'vel_j_low = 100' 그대로이고 '@override' 주석이 없으며, 줄 왼쪽 DB 뱃지 · 파랑 배경이 표시되고 뱃지를 누르면 사이트 값 80 과 DRL 값 100 이 토스트로 표시되는지 확인
+5. main.drl 이 열리고 vel_j_low 줄로 이동하는지 확인
+
+=== SD031 No 3 | Engineering 저장 / 같은 값 저장으로 해제 → DRL 변경 추종 · 새 @UI 변수 | 자동화여부=X 수동=O
+[전제] 1. PalletizOS V2 모듈이 설치된 장비에 전원이 인가되고 모듈이 기동된 상태
+2. Local PC에 제어권이 이전된 상태
+3. 하기의 계정으로 로그인한 상태
+- 계정 : Internal
+4. 엔지니어링 변수 vel_j_low 의 DRL 값이 100(범위 0~200)인 상태
+5. vel_j_low 의 사이트 값이 80 으로 저장된 상태(Settings › Engineering 에서 저장)
+[데이터] 1. vel_j_low : 100
+2. main.drl : vel_j_low = 110
+3. main.drl 추가 줄 : vel_j_test = 50  # @UI 태그 포함
+[절차] 1. Settings › Engineering 화면에서 vel_j_low 를 Test Data 1 의 값으로 바꾸고 Save 한 뒤 DRL Viewer 의 vel_j_low 줄과 Engineering DB 를 확인한다.
+2. 로고를 10회 눌러 개발자 레일을 연다. 개발자 레일에서 DRL Editor 버튼을 누른다. main.drl 을 Test Data 2 · 3 과 같이 고쳐 Save 한다.
+3. DRL Viewer 의 vel_j_low 줄을 확인한다.
+4. Settings › Engineering 화면의 값 목록을 확인한다.
+[기대] 1. vel_j_low 줄이 'vel_j_low = 100' 이고 '@override' 주석과 Engineering DB 의 vel_j_low 행이 없는지 확인
+2. 확인창 없이 저장되고 DRL Editor 가 닫히는지 확인
+3. 하기의 문구가 표시되는지 확인
+- "vel_j_low = 110"
+4. vel_j_test 가 50 으로 목록에 나타나는지 확인
+
+=== SD031 No 4 | DRL Editor / 레일 버튼 · 화면 구성 · 파일 전환 · Final Code 탭 · 접기 · Export | 자동화여부=X 수동=O
+[전제] 1. PalletizOS V2 모듈이 설치된 장비에 전원이 인가되고 모듈이 기동된 상태
+2. Local PC에 제어권이 이전된 상태
+3. 하기의 계정으로 로그인한 상태
+- 계정 : Internal
+[데이터] None
+[절차] 1. 로고를 10회 눌러 개발자 레일을 연다. 버튼 열 맨 아래를 확인하고 DRL Editor 버튼을 누른다.
+2. 제목 · 탐색기 · 하단 버튼을 확인한다.
+3. Files 의 sub.drl 을 누르고 스위치를 확인한 뒤, Output 의 Final Code 를 누르고 스위치와 하단 버튼을 확인한다.
+4. 탐색기의 접기 버튼을 누른 뒤 펼치기 버튼을 누른다.
+5. Files 의 main.drl 을 누르고 Export 를 눌러 내려받은 파일을 연다.
+[기대] 1. Security 버튼 아래에 같은 모양의 DRL Editor 버튼이 있고 누르면 DRL Editor 가 열리는지 확인
+2. 제목이 하기의 문구이고, 탐색기 맨 위에 파일 이름 · 눈 · 접기 버튼, Files(drl › main.drl · sub.drl) · Output(Final Code · 자물쇠) · Engineering DB 구역, 하단에 Reset · Import · Export · Line Break · Cancel · Save 가 표시되는지 확인
+- "DRL Editor"
+3. sub.drl 에서는 코드 · 파일 이름이 바뀌고 Decompress 스위치가 없으며, Final Code 에서는 하기의 스위치가 표시되고 Reset · Import · Export 가 비활성화되는지 확인
+- "Decompress LAYERS/POS_LIST"
+4. 접으면 좁은 막대에 펼치기 · 눈 버튼만 남고, 펼치면 다시 펼쳐지는지 확인
+5. main.drl · sub.drl 을 담은 ZIP 파일이 내려받아지는지 확인
+
+=== SD031 No 5 | DRL Editor / 눈(파일별 읽기 전용) · Replace 표시 · 재진입 해제 | 자동화여부=X 수동=O
+[전제] 1. PalletizOS V2 모듈이 설치된 장비에 전원이 인가되고 모듈이 기동된 상태
+2. Local PC에 제어권이 이전된 상태
+3. 하기의 계정으로 로그인한 상태
+- 계정 : Internal
+4. 개발자 레일에서 DRL Editor 를 연 상태(main.drl, 읽기 전용 아님)
+[데이터] None
+[절차] 1. 코드를 누르고 Ctrl+F 를 누른다.
+2. 눈 버튼을 누르고 문자를 입력한 뒤 Ctrl+F 를 누른다.
+3. sub.drl 을 누르고 눈 버튼을 확인한 뒤 main.drl 로 돌아온다.
+4. Output 의 Final Code 를 누르고 눈 버튼을 누른다.
+5. DRL Editor 를 닫았다가 다시 열고 main.drl 에 문자를 입력한다.
+[기대] 1. 편집 가능한 상태에서는 검색창에 바꾸기(Replace) 칸이 표시되는지 확인
+2. 눈 버튼이 켜지고 파일 이름 옆 'Read-only' · 트리 자물쇠가 표시되며, 문자가 입력되지 않고 검색창에 Replace 칸이 없는지 확인
+3. sub.drl 은 읽기 전용이 아니고, main.drl 은 읽기 전용이 유지되는지 확인
+4. Final Code 의 눈 버튼은 켜진 채 눌리지 않는지 확인
+5. 다시 열면 모든 파일의 읽기 전용이 풀려 있어 문자가 입력되는지 확인
+
+=== SD031 No 6 | DRL Editor / Import — ZIP 구성별 | 자동화여부=X 수동=O
+[전제] 1. PalletizOS V2 모듈이 설치된 장비에 전원이 인가되고 모듈이 기동된 상태
+2. Local PC에 제어권이 이전된 상태
+3. 하기의 계정으로 로그인한 상태
+- 계정 : Internal
+4. UI 언어가 English 인 상태
+5. 개발자 레일에서 DRL Editor 를 연 상태(main.drl)
+[데이터] 1. ZIP-A : main.drl · sub.drl 을 모두 담은 ZIP
+2. ZIP-B : main.drl 만 담은 ZIP(ZIP-A 와 다른 내용)
+3. ZIP-C : main · sub 파일이 없는 ZIP
+[절차] 1. Import 로 ZIP-A 를 가져오고 main.drl · sub.drl 을 각각 연다.
+2. Import 로 ZIP-B 를 가져오고 main.drl · sub.drl 을 각각 연다.
+3. Import 로 ZIP-C 를 가져온다.
+[기대] 1. main.drl · sub.drl 이 모두 ZIP-A 의 내용으로 바뀌는지 확인
+2. main.drl 만 ZIP-B 의 내용으로 바뀌고 sub.drl 은 ZIP-A 내용 그대로인지 확인
+3. 하기의 문구가 표시되고 main.drl · sub.drl 이 바뀌지 않는지 확인
+- "The ZIP file has no main or sub DRL file."
+
+=== SD031 No 7 | DRL Editor / Import — 단일 파일 이름 · 확장자 | 자동화여부=X 수동=O
+[전제] 1. PalletizOS V2 모듈이 설치된 장비에 전원이 인가되고 모듈이 기동된 상태
+2. Local PC에 제어권이 이전된 상태
+3. 하기의 계정으로 로그인한 상태
+- 계정 : Internal
+4. 개발자 레일에서 DRL Editor 를 연 상태(sub.drl)
+[데이터] 1. 파일-A : main.txt
+2. 파일-B : custom_test.py
+[절차] 1. sub.drl 을 연 상태에서 Import 로 파일-A 를 가져온다.
+2. sub.drl 을 다시 연 상태에서 Import 로 파일-B 를 가져온다.
+[기대] 1. main.drl 이 파일-A 내용으로 바뀌고 열린 파일이 main.drl 로 이동하며 sub.drl 은 바뀌지 않는지 확인
+2. 열려 있던 sub.drl 이 파일-B 내용으로 바뀌고 main.drl 은 파일-A 내용 그대로인지 확인
+
+=== SD031 No 8 | Editor Save / 확인창 Cancel → Apply DRL Values | 자동화여부=X 수동=O
+[전제] 1. PalletizOS V2 모듈이 설치된 장비에 전원이 인가되고 모듈이 기동된 상태
+2. Local PC에 제어권이 이전된 상태
+3. 하기의 계정으로 로그인한 상태
+- 계정 : Internal
+4. 엔지니어링 변수 vel_j_low 의 DRL 값이 100(범위 0~200)인 상태
+5. vel_j_low 의 사이트 값이 80 으로 저장된 상태(Settings › Engineering 에서 저장)
+6. 개발자 레일에서 DRL Editor 를 연 상태(main.drl)
+[데이터] 1. main.drl : vel_j_low = 90
+[절차] 1. vel_j_low 값을 Test Data 의 값으로 고치고 Save 를 누른 뒤 확인창에서 Cancel 을 누른다.
+2. DRL Editor 가 열린 상태를 확인하고 하단 Cancel 로 닫은 뒤, DRL Editor 를 다시 열어 main.drl 과 DRL Viewer 의 vel_j_low 줄을 확인한다.
+3. 다시 vel_j_low 를 Test Data 의 값으로 고치고 Save 를 누른 뒤 확인창에서 Apply DRL Values 를 누른다.
+4. DRL Viewer 의 vel_j_low 줄을 확인한다. Log › Module Log 를 확인한다.
+[기대] 1. 제목 'Save DRL' 확인창에 하기의 문구와 Cancel · Keep Saved Values · Apply DRL Values 버튼이 표시되는지 확인
+- "vel_j_low: 80 → 90"
+2. 확인창 Cancel 뒤에도 Editor 가 열려 있고, 다시 열면 vel_j_low 가 100 이며 Viewer 에 'vel_j_low = 80  # @override(db) drl=100' 이 표시되는지 확인
+3. 저장되고 DRL Editor 가 닫히는지 확인
+4. Viewer 에 'vel_j_low = 90' 이 표시되고 Module Log 에 하기의 문구가 표시되는지 확인
+- "[Setting] Engineer setting released by DRL Editor save (1 value)"
+- "vel_j_low: 80 → 90 (DRL value 100 → 90)"
+
+=== SD031 No 9 | Editor Save / Keep Saved Values → 주황 표식 → 다른 값 재저장으로 해제 | 자동화여부=X 수동=O
+[전제] 1. PalletizOS V2 모듈이 설치된 장비에 전원이 인가되고 모듈이 기동된 상태
+2. Local PC에 제어권이 이전된 상태
+3. 하기의 계정으로 로그인한 상태
+- 계정 : Internal
+4. UI 언어가 한국어인 상태
+5. 엔지니어링 변수 vel_j_low 의 DRL 값이 100(범위 0~200)인 상태
+6. vel_j_low 의 사이트 값이 80 으로 저장된 상태(Settings › Engineering 에서 저장)
+7. 개발자 레일에서 DRL Editor 를 연 상태(main.drl)
+[데이터] 1. main.drl : vel_j_low = 90
+2. vel_j_low : 81
+[절차] 1. vel_j_low 값을 Test Data 1 의 값으로 고치고 Save 를 누른 뒤 확인창에서 Keep Saved Values 를 누른다.
+2. 로고를 10회 눌러 개발자 레일을 연다. 개발자 레일에서 DRL Editor 버튼을 누른다. main.drl 의 vel_j_low 줄과 Engineering DB 구역을 확인하고 닫는다.
+3. DRL Viewer 의 vel_j_low 줄을 확인한다. Settings › Engineering 의 vel_j_low 필드를 확인한다.
+4. vel_j_low 를 80 그대로 다시 Save 하려 한 뒤, Test Data 2 의 값으로 바꿔 Save 하고 필드 아래를 확인한다.
+[기대] 1. 저장되고 DRL Editor 가 닫히는지 확인
+2. DB 뱃지와 줄 배경이 주황이고 Engineering DB 설명이 주황으로 하기와 같이 표시되는지 확인
+- "Replaces DRL 90 (edited from 100)"
+3. Viewer 에 하기의 첫 번째 문구가, 필드에 80 과 주황 안내(두 번째 문구)가 표시되는지 확인
+- "vel_j_low = 80  # @override(db) drl=90 was=100"
+- "DRL 값이 100에서 90(으)로 바뀌었습니다. 저장한 값을 사용합니다."
+4. 같은 값 80 은 변경으로 보지 않아 저장되지 않고, 81 로 저장하면 주황 안내가 사라지는지 확인
+
+=== SD031 No 10 | Editor Save / 빈 파일 · DRL 값 범위 밖 저장 거부 → 범위 축소 시 DRL 값 | 자동화여부=X 수동=O
+[전제] 1. PalletizOS V2 모듈이 설치된 장비에 전원이 인가되고 모듈이 기동된 상태
+2. Local PC에 제어권이 이전된 상태
+3. 하기의 계정으로 로그인한 상태
+- 계정 : Internal
+4. 엔지니어링 변수 vel_j_low 의 DRL 값이 100(범위 0~200)인 상태
+5. vel_j_low 의 사이트 값이 80 으로 저장된 상태(Settings › Engineering 에서 저장)
+6. 개발자 레일에서 DRL Editor 를 연 상태(main.drl)
+[데이터] 1. main.drl : vel_j_low 범위 0~50 (값 = 100)
+2. main.drl : vel_j_low 범위 0~50 (값 = 30)
+[절차] 1. main.drl 의 내용을 모두 지우고 Save 버튼을 확인한 뒤 Ctrl+Z 로 되돌린다.
+2. vel_j_low 범위와 값을 Test Data 1 과 같이 고치고 Save 를 누른다.
+3. 값을 Test Data 2 와 같이 고치고 Save 를 누른 뒤 확인창을 확인한다.
+4. 확인창에서 Apply DRL Values 를 누르고 DRL Viewer 의 vel_j_low 줄을 확인한다.
+[기대] 1. 파일이 비어 있으면 Save 버튼이 비활성화되는지 확인
+2. 하기의 문구와 'vel_j_low: 100 (outside 0–50)' 형식의 변수 목록이 표시되고 저장되지 않는지 확인
+- "Cannot Save DRL"
+3. 확인창에 vel_j_low 가 따로 표시되고 Keep Saved Values 버튼 없이 Cancel · Apply DRL Values 만 있는지 확인
+4. 하기의 문구가 표시되는지 확인
+- "vel_j_low = 30"
+
+=== SD031 No 11 | 권한 / Editor 닫힘 / Cancel · 레일 펼침 · 로그아웃 · 계정 전환 시 닫힘과 편집 폐기 | 자동화여부=X 수동=O
+[전제] 1. PalletizOS V2 모듈이 설치된 장비에 전원이 인가되고 모듈이 기동된 상태
+2. Local PC에 제어권이 이전된 상태
+3. 하기의 계정으로 로그인한 상태
+- 계정 : Internal
+4. 개발자 레일에서 DRL Editor 를 연 상태(main.drl)
+[데이터] 1. main.drl : 임의 줄에 주석 '# close test' 추가
+[절차] 1. Test Data 의 줄을 추가하고 Save 하지 않고 하단 Cancel 을 누른 뒤 DRL Editor 를 다시 연다.
+2. Test Data 의 줄을 다시 추가하고 개발자 레일 패널을 펼친 뒤 접고 DRL Editor 를 다시 연다.
+3. Test Data 의 줄을 다시 추가하고 Save 하지 않고 로그아웃한 뒤 Internal 로 다시 로그인하여 DRL Editor 를 연다.
+4. DRL Editor 를 연 채 Super Admin 계정으로 전환한다.
+[기대] 1. Editor 가 닫히고 다시 열었을 때 추가한 줄이 없는지 확인
+2. 레일 패널을 펼치면 Editor 가 닫히고, 다시 열었을 때 추가한 줄이 없는지 확인
+3. 로그아웃하면 Editor 가 닫히고 다시 열었을 때 추가한 줄이 없는지 확인
+4. DRL Editor 가 닫히고 개발자 레일이 표시되지 않는지 확인
+
+=== SD031 No 12 | 휴면 변수 / 삭제 → 휴면 → 같은 값 재등장 → 다른 값 재등장 | 자동화여부=X 수동=O
+[전제] 1. PalletizOS V2 모듈이 설치된 장비에 전원이 인가되고 모듈이 기동된 상태
+2. Local PC에 제어권이 이전된 상태
+3. 하기의 계정으로 로그인한 상태
+- 계정 : Internal
+4. 엔지니어링 변수 vel_j_low 의 DRL 값이 100(범위 0~200)인 상태
+5. vel_j_low 의 사이트 값이 80 으로 저장된 상태(Settings › Engineering 에서 저장)
+6. 개발자 레일에서 DRL Editor 를 연 상태(main.drl)
+[데이터] 1. 재등장 줄 A : vel_j_low = 100 (범위 0~200)
+2. 재등장 줄 B : vel_j_low = 90 (범위 0~200)
+[절차] 1. main.drl 에서 vel_j_low 줄을 지우고 Save 한 뒤, Final Code 와 Engineering DB 의 vel_j_low 행을 확인하고 그 행을 누른다.
+2. main.drl 에 재등장 줄 A 를 추가하고 Save 한 뒤 DRL Viewer 의 vel_j_low 줄을 확인한다.
+3. vel_j_low 줄을 다시 지우고 Save 한 뒤, 재등장 줄 B 를 추가하고 Save 를 누른다.
+[기대] 1. Final Code 에 vel_j_low 줄이 없고 Engineering DB 에 vel_j_low 가 흐리게 하기의 문구로 표시되며, 눌러도 이동하지 않는지 확인
+- "Not in DRL · not used"
+2. 확인창 없이 저장되고 하기의 문구가 표시되는지 확인
+- "vel_j_low = 80  # @override(db) drl=100"
+3. 확인창에 하기의 문구가 표시되는지 확인
+- "vel_j_low: 80 → 90"
+
+=== SD031 No 13 | Backup & Restore / Technician — Export 3섹션 · Import 불가 · Engineering 숨김 | 자동화여부=X 수동=O
+[전제] 1. PalletizOS V2 모듈이 설치된 장비에 전원이 인가되고 모듈이 기동된 상태
+2. Local PC에 제어권이 이전된 상태
+3. 하기의 계정으로 로그인한 상태
+- 계정 : Technician
+4. UI 언어가 한국어인 상태
+[데이터] None
+[절차] 1. Settings 메뉴를 확인한다.
+2. Settings › Backup & Restore 화면의 Export · Import · 복원 버튼을 확인한다.
+3. Export 를 시작하고 Settings 항목 아래를 확인한다.
+[기대] 1. Engineering 메뉴가 표시되지 않는지 확인
+2. Export 는 활성화되어 있고 Import · 복원은 비활성화되어 있는지 확인
+3. 하기의 이름이 글자로 표시되고 따로 선택할 수 없는지 확인
+- "DRL"
+- "엔지니어링 설정"
+- "기타"
+
+=== SD031 No 14 | Backup & Restore / Admin 은 하위 섹션 숨김 · Super Admin Review 섹션과 DRL 값으로 돌아가는 값 | 자동화여부=X 수동=O
+[전제] 1. PalletizOS V2 모듈이 설치된 장비에 전원이 인가되고 모듈이 기동된 상태
+2. Local PC에 제어권이 이전된 상태
+3. 하기의 계정으로 로그인한 상태
+- 계정 : Admin
+4. UI 언어가 한국어인 상태
+5. vel_j_low 의 사이트 값 80 이 저장된 상태에서 만든 백업 파일이 있는 상태
+6. 백업 이후 새 @UI 변수 vel_j_test 를 추가하고 사이트 값을 저장한 상태
+[데이터] None
+[절차] 1. Settings 메뉴를 확인한 뒤, Settings › Backup & Restore 에서 백업 파일을 Import 하기 위해 선택하고 Review Data File 을 확인한 뒤 닫는다.
+2. Super Admin 계정으로 다시 로그인하여 같은 백업 파일을 Import 하기 위해 선택한다.
+3. Review Data File 의 Setting 항목 아래 엔지니어링 설정 행을 확인하고 각 섹션을 펼친다.
+[기대] 1. Engineering 메뉴가 없고, Review 에 DRL · 엔지니어링 설정 · 기타 하위 행이 표시되지 않는지 확인
+2. Review Data File 이 열리는지 확인
+3. DRL · 엔지니어링 설정 · 기타 세 섹션이 따로 표시되고 엔지니어링 설정 행 아래에 하기의 문구가 주황으로 표시되며, 엔지니어링 설정에 패널 값 7개와 변수 목록, 기타에 팔레트 기준점 · 천장이 표시되는지 확인
+- "백업에 없어 DRL 값으로 돌아가는 값 1개"
+
+=== SD031 No 15 | Backup & Restore / Internal — 백업의 DRL 만 Import 하면 사이트 값 유지 | 자동화여부=X 수동=O
+[전제] 1. PalletizOS V2 모듈이 설치된 장비에 전원이 인가되고 모듈이 기동된 상태
+2. Local PC에 제어권이 이전된 상태
+3. 하기의 계정으로 로그인한 상태
+- 계정 : Internal
+4. UI 언어가 한국어인 상태
+5. 엔지니어링 변수 vel_j_low 의 DRL 값이 100(범위 0~200)인 상태
+6. vel_j_low 의 사이트 값이 80 으로 저장된 상태(Settings › Engineering 에서 저장)
+7. vel_j_low = 90 인 DRL 이 담긴 백업 파일이 있는 상태
+[데이터] None
+[절차] 1. Settings › Backup & Restore 에서 백업 파일을 Import 하기 위해 선택한다.
+2. Review Data File 에서 DRL 만 선택하고 엔지니어링 설정 · 기타 선택을 해제한 뒤 Import 하고 재시작을 기다린다.
+3. DRL Viewer 의 vel_j_low 줄을 확인한다. Settings › Engineering 의 vel_j_low 필드를 확인한다.
+[기대] 1. Review 에서 DRL 항목을 선택할 수 있는지 확인
+2. 적용 후 재시작되는지 확인
+3. Viewer 에 하기의 첫 번째 문구가, 필드에 80 과 주황 안내(두 번째 문구)가 표시되는지 확인
+- "vel_j_low = 80  # @override(db) drl=90 was=100"
+- "DRL 값이 100에서 90(으)로 바뀌었습니다. 저장한 값을 사용합니다."
+
+=== SD031 No 16 | Backup & Restore / 범위 팝업 Cancel → 재시도 Confirm | 자동화여부=X 수동=O
+[전제] 1. PalletizOS V2 모듈이 설치된 장비에 전원이 인가되고 모듈이 기동된 상태
+2. Local PC에 제어권이 이전된 상태
+3. 하기의 계정으로 로그인한 상태
+- 계정 : Admin
+4. UI 언어가 한국어인 상태
+5. vel_j_low 사이트 값 80 과 다른 변수의 사이트 값이 담긴 백업 파일이 있는 상태(팔레트 모드는 현재와 같음)
+6. 현재 DRL 의 vel_j_low 범위가 0~50(값 30)인 상태
+7. Home 에 적재 레시피가 선택된 상태
+[데이터] None
+[절차] 1. Settings › Backup & Restore 에서 백업 파일을 Import 하고 비밀번호를 확인한다.
+2. 팝업에서 Cancel 을 누르고 Settings 화면에 머무는지 확인한다.
+3. 같은 백업 파일을 다시 Import 하고 팝업에서 Confirm 을 누른 뒤 재시작을 기다린다.
+4. Super Admin 으로 로그인하여 Settings › Engineering 의 값과 Log › Module Log, Home 의 레시피 선택을 확인한다.
+[기대] 1. 하기의 제목 · 본문과 '<라벨>: 80 → 30 (범위 0~50 벗어남)' 형식의 vel_j_low 행이 표시되는지 확인
+- "기본값으로 바뀌는 엔지니어링 설정"
+- "다음 값은 DRL에 맞지 않아 DRL 기본값으로 바뀝니다. 계속하려면 Confirm을 누르세요."
+2. Import 가 취소되고 아무것도 바뀌지 않는지 확인
+3. 적용 후 재시작되는지 확인
+4. vel_j_low 만 30 으로 바뀌고 다른 변수는 백업 값으로 적용되며, Module Log 에 하기의 문구가 표시되고 적재 레시피 선택은 유지되는지 확인
+- "[Setting] Engineer setting changed to DRL default on import (1 value)"
+- "vel_j_low: 80 → 30 (outside range 0–50)"
+
+=== SD031 No 17 | Backup & Restore / 전체 교체 · 팔레트 모드 변경 시 레시피 해제 | 자동화여부=X 수동=O
+[전제] 1. PalletizOS V2 모듈이 설치된 장비에 전원이 인가되고 모듈이 기동된 상태
+2. Local PC에 제어권이 이전된 상태
+3. 하기의 계정으로 로그인한 상태
+- 계정 : Admin
+4. vel_j_low 사이트 값 80 과 현재와 다른 좌 팔레트 역할이 담긴 백업 파일이 있는 상태(범위 밖 값 없음)
+5. 백업 이후 이 셀에서만 다른 변수(vel_j_test)의 사이트 값을 저장한 상태
+6. Home 에 적재 레시피 · 디팔 박스 레시피가 선택된 상태
+[데이터] None
+[절차] 1. Settings › Backup & Restore 에서 백업 파일을 Import 하고 재시작을 기다린다.
+2. Home 화면의 레시피 선택 상태를 확인한다.
+3. Super Admin 으로 로그인하여 DRL Viewer 의 vel_j_low · vel_j_test 줄을 확인한다.
+[기대] 1. 범위 팝업 없이 적용되는지 확인
+2. 적재 레시피 · 디팔 박스 레시피 선택이 모두 해제되어 있는지 확인
+3. vel_j_low 줄이 80 으로 '@override(db)' 주석과 함께, vel_j_test 줄이 DRL 값으로 '@override' 없이 표시되는지 확인
+
+=== SD031 No 18 | Backup & Restore / Initialize | 자동화여부=X 수동=O
+[전제] 1. PalletizOS V2 모듈이 설치된 장비에 전원이 인가되고 모듈이 기동된 상태
+2. Local PC에 제어권이 이전된 상태
+3. 하기의 계정으로 로그인한 상태
+- 계정 : Super Admin
+4. UI 언어가 English 인 상태
+5. 엔지니어링 변수 vel_j_low 의 DRL 값이 100(범위 0~200)인 상태
+6. vel_j_low 의 사이트 값이 80 으로 저장된 상태(Settings › Engineering 에서 저장)
+[데이터] None
+[절차] 1. Settings › Backup & Restore 에서 Initialize 를 실행한다.
+2. DRL Viewer 의 Final code 와 Engineering DB 구역을 확인한다.
+[기대] 1. Final code 에 '@override' 주석이 하나도 없고 vel_j_low 줄이 100 인지 확인
+2. 하기의 문구가 표시되는지 확인
+- "No values saved in Engineer Setting"
+
+=== SD031 No 19 | Backup & Restore / SR031 이전 백업 | 자동화여부=X 수동=O
+[전제] 1. PalletizOS V2 모듈이 설치된 장비에 전원이 인가되고 모듈이 기동된 상태
+2. Local PC에 제어권이 이전된 상태
+3. 하기의 계정으로 로그인한 상태
+- 계정 : Super Admin
+4. SR031 이전 버전 모듈에서 Export 한 백업 파일(엔지니어링 설정 섹션 없음)이 있는 상태
+[데이터] None
+[절차] 1. Settings › Backup & Restore 에서 백업 파일을 Import 하고 재시작을 기다린다.
+2. DRL Viewer 와 Settings › Engineering 패널 값을 확인한다.
+[기대] 1. 백업 DRL 에 적혀 있던 엔지니어링 변수 값으로 Final code 가 표시되는지 확인
+2. Run Mode 등 패널 값이 백업 당시 값으로 표시되는지 확인
+
+=== SD031 No 20 | 모듈 업데이트 / 기본값 그대로 · 기본값 변경 동시 확인 | 자동화여부=X 수동=O
+[전제] 1. PalletizOS V2 모듈이 설치된 장비에 전원이 인가되고 모듈이 기동된 상태
+2. Local PC에 제어권이 이전된 상태
+3. 하기의 계정으로 로그인한 상태
+- 계정 : Admin
+4. UI 언어가 English 인 상태
+5. vel_j_low 의 사이트 값이 80 으로 저장된 상태(Settings › Engineering 에서 저장)
+6. vel_j_high 의 DRL 값이 100 이고 사이트 값 70 이 저장된 상태
+7. 새 버전 모듈에서 vel_j_low 기본값은 100 그대로, vel_j_high 기본값은 120 으로 바뀐 상태
+8. 번들 DRL 로 동작 중인 상태
+[데이터] None
+[절차] 1. 새 버전 모듈로 업데이트하고 기동한다.
+2. Log › Module Log 를 확인한다.
+3. Super Admin 으로 로그인하여 DRL Viewer 의 vel_j_low · vel_j_high 줄을 확인한다.
+[기대] 1. 확인창 없이 기동되는지 확인
+2. Module Log 에 하기 형식의 문구가 표시되고 vel_j_low 는 적히지 않는지 확인
+- "[Setting] Engineer setting updated by module update <이전 버전> → <새 버전> (1 value)"
+- "vel_j_high: 70 → 120 (DRL default 100 → 120, saved value released)"
+3. vel_j_low 는 'vel_j_low = 80  # @override(db) drl=100', vel_j_high 는 'vel_j_high = 120' 으로 표시되는지 확인
+
+=== SD031 No 21 | 모듈 업데이트 / 저장 DRL 셀 | 자동화여부=X 수동=O
+[전제] 1. PalletizOS V2 모듈이 설치된 장비에 전원이 인가되고 모듈이 기동된 상태
+2. Local PC에 제어권이 이전된 상태
+3. 하기의 계정으로 로그인한 상태
+- 계정 : Super Admin
+4. DRL Editor 로 저장한 DRL(저장 DRL)로 동작 중인 상태
+5. vel_j_low 의 사이트 값이 80 으로 저장된 상태(Settings › Engineering 에서 저장)
+[데이터] None
+[절차] 1. 새 버전 모듈로 업데이트하고 기동한다.
+2. Settings › Backup & Restore 의 복원 지점 목록과 Log › Module Log 를 확인한다.
+3. DRL Viewer 를 확인한다.
+[기대] 1. 복원 지점 목록에 'Autosave_Update_YYMMDD' 형식의 복원 지점이 생성되는지 확인
+2. Module Log 에 DRL 교체와 바뀐 값이 한 항목(0222)으로 표시되는지 확인
+3. Final code 가 새 모듈 DRL 기준으로 표시되는지 확인
+
+=== SD031 No 22 | 모듈 업데이트 / SR031 이전 모듈에서 업그레이드 | 자동화여부=X 수동=O
+[전제] 1. PalletizOS V2 모듈이 설치된 장비에 전원이 인가되고 모듈이 기동된 상태
+2. Local PC에 제어권이 이전된 상태
+3. 하기의 계정으로 로그인한 상태
+- 계정 : Super Admin
+4. UI 언어가 한국어인 상태
+5. SR031 이전 버전 모듈에서 엔지니어링 값을 DRL 로 수정해 사용 중인 상태
+[데이터] None
+[절차] 1. 현재 버전 모듈로 업데이트하고 기동한다.
+2. Settings › Engineering 화면과 DRL Viewer 를 확인한다.
+[기대] 1. 엔지니어링 값이 업그레이드 전과 같은 값으로 표시되는지 확인
+2. Engineering 화면에 'DRL 값이 … 바뀌었습니다' 안내가 하나도 없는지 확인
+3. 번들과 다른 값이 '@override(db)' 주석으로 표시되는지 확인
+
+=== SD031 No 23 | 기준점·천장 / Engineering 목록 제외 · 천장 저장은 Robot Setting 만 | 자동화여부=X 수동=O
+[전제] 1. PalletizOS V2 모듈이 설치된 장비에 전원이 인가되고 모듈이 기동된 상태
+2. Local PC에 제어권이 이전된 상태
+3. 하기의 계정으로 로그인한 상태
+- 계정 : Internal
+4. 팔레트 기준점 · 천장 변수가 남아 있는 옛 DRL 을 DRL Editor 로 Import · Save 한 상태
+[데이터] 1. 천장 높이 : 현재 값 -100
+[절차] 1. Settings › Engineering 화면의 값 목록을 확인한다.
+2. Settings › Robot › Base 에서 천장 높이를 Test Data 의 값으로 바꾸고 Save 한다.
+3. DRL Editor 의 main.drl 과 DRL Viewer 의 Final code 를 확인한다.
+[기대] 1. 팔레트 기준점 · 천장 변수가 목록에 표시되지 않는지 확인
+2. 저장되는지 확인
+3. main.drl 텍스트는 바뀌지 않고 Final code 의 천장 값이 저장한 값으로 표시되는지 확인
+
+=== SD031 No 24 | 기준점·천장 / 베이스 버전 변경 → 미저장 이탈 → Save 연동(천장 고정) | 자동화여부=X 수동=O
+[전제] 1. PalletizOS V2 모듈이 설치된 장비에 전원이 인가되고 모듈이 기동된 상태
+2. Local PC에 제어권이 이전된 상태
+3. 하기의 계정으로 로그인한 상태
+- 계정 : Super Admin
+4. Settings › Robot › Base 화면에 진입한 상태
+5. 베이스 버전이 v1.6 이고 높이 오프셋이 0 인 상태
+6. 단위가 METRIC 인 상태
+[데이터] None
+[절차] 1. 베이스 버전 드롭다운에서 v2.0.1 을 선택하고 높이 오프셋을 확인한다.
+2. Save 하지 않고 좌측 메뉴로 이동한 뒤 Unsaved Changes 팝업에서 Discard & Exit 를 누르고 Settings › Robot › Base 에 다시 진입한다.
+3. 천장 · 좌/우 기준점 Z · 컨베이어 Z · 슬립시트 Pick 위치 Z 를 기록하고, 다시 v2.0.1 을 선택해 Save 한다.
+[기대] 1. 높이 오프셋이 하기의 값으로 채워지는지 확인
+- "381"
+2. 베이스 버전이 v1.6, 높이 오프셋이 0 으로 표시되는지 확인
+3. 기준점 Z · 컨베이어 Z · 슬립시트 Pick 위치 Z 는 381 만큼 낮아지고, 천장은 그대로인지 확인
+
+=== SD031 No 25 | 기준점·천장 / 기준점 Reset — 기준 오프셋 · 다른 오프셋 | 자동화여부=X 수동=O
+[전제] 1. PalletizOS V2 모듈이 설치된 장비에 전원이 인가되고 모듈이 기동된 상태
+2. Local PC에 제어권이 이전된 상태
+3. 하기의 계정으로 로그인한 상태
+- 계정 : Super Admin
+4. Settings › Robot › Base 화면에 진입한 상태
+5. 베이스 버전이 v2.0.1 이고 높이 오프셋이 381 인 상태
+[데이터] None
+[절차] 1. 좌 기준점 Reset 과 우 기준점 Reset 을 누른다.
+2. 베이스 버전을 v1.6 으로 바꾸고 높이 오프셋을 381 로 입력해 Save 한 뒤 좌 기준점 Reset 을 누른다.
+[기대] 1. 좌 · 우 기준점이 하기의 값으로 표시되는지 확인
+- "[923, -11.4, -1497, 0, 0, 0]"
+- "[-923, -11.4, -1497, 0, 0, 0]"
+2. 좌 기준점 X · Y 가 973 · -15, Z 가 하기의 값으로 표시되는지 확인
+- "-1531"
+
+=== SD031 No 26 | 기준점·천장 / 천장 Z 제한(실기) | 자동화여부=X 수동=O
+[전제] 1. PalletizOS V2 모듈이 설치된 장비에 전원이 인가되고 모듈이 기동된 상태
+2. Local PC에 제어권이 이전된 상태
+3. 하기의 계정으로 로그인한 상태
+- 계정 : Super Admin
+4. Servo On 상태
+5. Settings › Robot › Base 의 천장 높이가 저장된 상태
+[데이터] None
+[절차] 1. Robot Control 팝업에서 툴을 +Z 방향으로 천장 높이까지 이동한다.
+[기대] 1. 로봇이 Robot Setting 의 천장 높이를 넘어 이동하지 않는지 확인
+

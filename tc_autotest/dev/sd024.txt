@@ -1,0 +1,189 @@
+=== SD024 No 1 | 기본 상태 / 초기값 · 색 목록 | 자동화여부=X 수동=O
+[전제] 1. PalletizOS V2 모듈이 설치된 장비에 전원이 인가되고 모듈이 기동된 상태
+2. Local PC에 제어권이 이전된 상태
+3. 하기의 계정으로 로그인한 상태
+- 계정 : Admin
+4. UI 언어가 English 인 상태
+5. Slipsheet 설정을 저장한 적이 없는 초기 상태
+6. 단위가 METRIC 인 상태
+[데이터] None
+[절차] 1. Setting > Slipsheet 화면에 진입한다.
+2. Slipsheet 토글 · Type · Color · Width · Length · Thickness 행을 확인한다.
+3. Slipsheet 토글을 On 으로 바꾸고 Color 드롭다운을 연다.
+[기대] 1. Slipsheet 토글이 Off 이고 아래 행들이 비활성화되어 있는지 확인
+2. 하기의 값이 표시되는지 확인
+- Type : "Paper"
+- Color : "Warm Gray"
+- Width : "914.4"
+- Length : "1097.3"
+- Thickness : "2.5"
+3. 미선택 상태(placeholder) 없이 하기의 5색이 순서대로 각각 색 스와치와 함께 표시되는지 확인
+- "Warm Gray"
+- "Teal"
+- "Violet"
+- "Pink"
+- "Amber"
+
+=== SD024 No 2 | 색 / 크기 / 저장 / 편집 즉시 반영(홀더) · Save · Recipe 3D · 재기동 후 유지 | 자동화여부=X 수동=O
+[전제] 1. PalletizOS V2 모듈이 설치된 장비에 전원이 인가되고 모듈이 기동된 상태
+2. Local PC에 제어권이 이전된 상태
+3. 하기의 계정으로 로그인한 상태
+- 계정 : Admin
+4. UI 언어가 English 인 상태
+5. Setting > Slipsheet 화면에 진입한 상태
+6. Slipsheet 토글 On · Color Warm Gray · Width 914.4 · Length 1097.28 mm 로 저장된 상태
+7. Type 이 Cardboard 인 상태
+8. 단위가 METRIC 인 상태
+[데이터] 1. Color : Teal
+2. Width : 700
+[절차] 1. Color 드롭다운에서 저장된 색(Warm Gray)을 다시 고르고 Save 버튼을 확인한다.
+2. Color 를 Test Data 1 로 고르고 우측 3D 뷰의 홀더 시트를 확인한다. Color 스와치와 비교한다.
+3. Width 에 Test Data 2 를 입력하고 우측 3D 뷰의 홀더 시트를 확인한다.
+4. Save 를 누른 뒤 Recipe 목록 화면에서 슬립시트를 사용하는 레시피를 선택하고 3D 미리보기의 팔레트 시트를 확인한다.
+5. PalletizOS V2 모듈을 종료 후 다시 기동하고 Setting > Slipsheet 화면에 진입한다.
+[기대] 1. 변경이 없으므로 Save 버튼이 비활성화되어 있는지 확인
+2. Save 전에도 홀더 시트가 Teal 로 바뀌고 Color 스와치와 같은 색으로 보이며, Save 버튼이 활성화되는지 확인
+3. Save 전에도 홀더 시트의 가로 크기가 줄어드는지 확인
+4. 팔레트 위 시트들이 Teal · 줄어든 가로 크기로 표시되고 팔레트 크기는 그대로인지 확인
+5. Color 가 Teal, Width 가 700.0 으로 표시되는지 확인
+
+=== SD024 No 3 | 색 설정 / Type 변경 시 질감만 변경 | 자동화여부=X 수동=O
+[전제] 1. PalletizOS V2 모듈이 설치된 장비에 전원이 인가되고 모듈이 기동된 상태
+2. Local PC에 제어권이 이전된 상태
+3. 하기의 계정으로 로그인한 상태
+- 계정 : Admin
+4. UI 언어가 English 인 상태
+5. Setting > Slipsheet 화면에 진입한 상태
+6. Color 가 Teal 로 저장된 상태
+7. Type 이 Cardboard 인 상태
+8. 단위가 METRIC 인 상태
+[데이터] None
+[절차] 1. 우측 3D 뷰의 홀더 시트를 확인한다.
+2. Type 라디오에서 Paper 를 선택하고 우측 3D 뷰의 홀더 시트를 확인한다.
+[기대] 1. 홀더 시트에 골판지 질감(텍스처)이 표시되는지 확인
+2. 질감이 사라지고 같은 Teal 계열로 더 밝게 보이며, Color 드롭다운은 Teal 로 유지되는지 확인
+
+=== SD024 No 4 | 크기 설정 / Width · Length · Thickness 경계와 범위 밖 보정 | 자동화여부=X 수동=O
+[전제] 1. PalletizOS V2 모듈이 설치된 장비에 전원이 인가되고 모듈이 기동된 상태
+2. Local PC에 제어권이 이전된 상태
+3. 하기의 계정으로 로그인한 상태
+- 계정 : Admin
+4. UI 언어가 English 인 상태
+5. Setting > Slipsheet 화면에 진입한 상태
+6. Slipsheet 토글이 On 인 상태
+7. 단위가 METRIC 인 상태
+8. 팔레트 크기가 기본값(1016 x 1219.2)인 상태
+[데이터] 1. Width : 600 → 609.6
+2. Length : 1301 → 1300
+3. Thickness : 101 → 0
+[절차] 1. Width 에 600 을 입력한 뒤, 다시 609.6 을 입력한다.
+2. Length 에 1301 을 입력한 뒤, 다시 1300 을 입력한다.
+3. Thickness 에 101 을 입력한 뒤, 다시 0 을 입력한다.
+4. Width 에 1300 을 입력하고 Save 를 누른 뒤 Recipe 목록 화면에서 슬립시트를 사용하는 레시피를 선택하고 3D 미리보기의 팔레트 시트를 확인한다.
+[기대] 1. 600 은 오류 문구 없이 하기의 첫 번째 값으로 보정되고, 609.6 은 그대로 표시되는지 확인
+- "609.6"
+- "609.6"
+2. 1301 은 하기의 값으로 보정되고, 1300 은 그대로 표시되는지 확인
+- "1300.0"
+3. 101 은 하기의 첫 번째 값으로 보정되고, 0 은 두 번째 값으로 표시되는지 확인
+- "100.0"
+- "0.0"
+4. 팔레트보다 큰 시트가 경고 · 잘림 없이 그대로 표시되는지 확인
+
+=== SD024 No 5 | Slipsheet 토글 / 저장 / 편집 · 토글 Off/On · 이탈 팝업 Cancel → Discard & Exit | 자동화여부=X 수동=O
+[전제] 1. PalletizOS V2 모듈이 설치된 장비에 전원이 인가되고 모듈이 기동된 상태
+2. Local PC에 제어권이 이전된 상태
+3. 하기의 계정으로 로그인한 상태
+- 계정 : Admin
+4. UI 언어가 English 인 상태
+5. Setting > Slipsheet 화면에 진입한 상태
+6. Slipsheet 토글 On · Color Warm Gray · Width 914.4 · Length 1097.28 mm 로 저장된 상태
+7. Type 이 Cardboard 인 상태
+8. 단위가 IMPERIAL 인 상태
+[데이터] 1. Color : Pink
+[절차] 1. Color 를 Test Data 의 색으로 고르고 Slipsheet 토글을 Off 로 내린 뒤 화면 전체와 3D 뷰를 확인한다.
+2. Slipsheet 토글을 다시 On 으로 올린다.
+3. Save 를 누르지 않고 좌측 메뉴에서 다른 화면을 누른 뒤, 팝업에서 Cancel 을 누른다.
+4. 다시 다른 화면을 누르고 팝업에서 Discard & Exit 를 누른 뒤 Setting > Slipsheet 화면에 다시 진입한다.
+[기대] 1. Type · Color · Width · Length · Thickness 와 Pick · Seek · Retract · Place 입력이 모두 비활성화되고, Color 스와치가 회색조로 바뀌며, 3D 뷰에 홀더가 표시되지 않는지 확인
+2. 모든 행이 다시 활성화되고 Color 는 Pink 그대로인지 확인
+3. 하기의 제목의 팝업이 표시되고, Cancel 을 누르면 Slipsheet 화면에 Pink 편집 상태로 남는지 확인
+- "Unsaved Changes"
+4. 토글 On · Color Warm Gray 로 저장값이 표시되고 3D 홀더 시트도 Warm Gray 인지 확인
+
+=== SD024 No 6 | 단위 / METRIC → IMPERIAL(표시 · 경계) → METRIC | 자동화여부=X 수동=O
+[전제] 1. PalletizOS V2 모듈이 설치된 장비에 전원이 인가되고 모듈이 기동된 상태
+2. Local PC에 제어권이 이전된 상태
+3. 하기의 계정으로 로그인한 상태
+- 계정 : Admin
+4. UI 언어가 English 인 상태
+5. Slipsheet 의 Width · Length · Thickness 가 914.4 · 1097.28 · 2.54 mm 로 저장된 상태
+6. Slipsheet 토글이 On 인 상태
+7. Type 이 Paper 인 상태
+8. 단위가 METRIC 인 상태
+[데이터] None
+[절차] 1. Setting > General 의 Unit 에서 IMPERIAL 을 선택하고 Setting > Slipsheet 화면에 진입한다.
+2. Width 에 23 을 입력하고 값을 확인한 뒤, 좌측 메뉴로 이동하여 팝업에서 Discard & Exit 를 누른다.
+3. Setting > General 의 Unit 에서 METRIC 을 선택하고 Setting > Slipsheet 화면에 진입한다.
+[기대] 1. 하기의 값과 단위 in 이 표시되는지 확인
+- Width : "36.00"
+- Length : "43.20"
+- Thickness : "0.10"
+2. Width 가 하기의 값으로 보정되는지 확인
+- "24.00"
+3. 하기의 값과 단위 mm 가 표시되는지 확인
+- Width : "914.4"
+- Length : "1097.3"
+- Thickness : "2.5"
+
+=== SD024 No 7 | 구버전 설정 / 업데이트 후 정규화 | 자동화여부=X 수동=O
+[전제] 1. PalletizOS V2 모듈이 설치된 장비에 전원이 인가되고 모듈이 기동된 상태
+2. Local PC에 제어권이 이전된 상태
+3. 하기의 계정으로 로그인한 상태
+- 계정 : Admin
+4. UI 언어가 English 인 상태
+5. SR024 이전 버전 모듈에서 Slipsheet 를 사용하도록 저장한 설정(색 · 크기 필드 없음)을 가진 채 현재 버전으로 업데이트된 상태
+6. 팔레트 크기가 기본값(1016 x 1219.2)인 상태
+7. 단위가 METRIC 인 상태
+[데이터] None
+[절차] 1. Setting > Slipsheet 화면에 진입한다.
+2. Color · Width · Length 행과 3D 뷰를 확인한다.
+[기대] 1. Color 가 하기의 값으로 표시되는지 확인
+- "Warm Gray"
+2. Width · Length 가 팔레트의 90% 인 하기의 값으로 표시되고 3D 홀더 시트가 사라지지 않고 표시되는지 확인
+- "914.4"
+- "1097.3"
+
+=== SD024 No 8 | 실행 중 표시 / 로봇 동작 / 툴 · 팔레트 · 2D 시트 표시와 로봇 동작 영향 | 자동화여부=X 수동=O
+[전제] 1. PalletizOS V2 모듈이 설치된 장비에 전원이 인가되고 모듈이 기동된 상태
+2. Local PC에 제어권이 이전된 상태
+3. 하기의 계정으로 로그인한 상태
+- 계정 : Admin
+4. UI 언어가 English 인 상태
+5. Servo On 상태
+6. 슬립시트를 사용하는 적재 레시피가 선택된 상태
+7. Color Warm Gray · Width 914.4 · Type Cardboard 로 1회 적재한 결과(슬립시트 Pick · Place 위치, 시트 이동 경유 높이)를 기록한 상태
+[데이터] 1. Color : Amber
+2. Width : 1300
+3. Type : Paper
+[절차] 1. Setting > Slipsheet 에서 Test Data 의 값으로 바꾸고 Save 한다.
+2. Home 화면에서 Start 하여 같은 레시피로 슬립시트 층까지 적재하며 3D 뷰의 툴 시트와 팔레트 시트를 확인한다.
+3. 슬립시트 층 적재 중 Monitoring 화면의 2D 미리보기를 확인한다.
+4. 슬립시트 Pick · Place 위치, 시트 이동 경유 높이, Air Flow Reducer IO 출력을 변경 전 기록과 비교한다.
+[기대] 1. 저장되는지 확인
+2. 툴에 든 시트와 팔레트 위 시트가 Amber · 늘어난 가로 크기로 표시되고 팔레트 중앙에 놓이는지 확인
+3. 2D 미리보기 시트가 Amber 로 표시되고, 크기는 팔레트의 95% 로 Width 변경 전과 같은지 확인
+4. Pick · Place 위치가 변경 전과 같은지 확인하고, 경유 높이와 Air Flow Reducer IO(Paper 일 때 On) 변화를 기록
+
+=== SD024 No 9 | 접근 권한 / Slipsheet 메뉴 노출 계정 | 자동화여부=X 수동=O
+[전제] 1. PalletizOS V2 모듈이 설치된 장비에 전원이 인가되고 모듈이 기동된 상태
+2. Local PC에 제어권이 이전된 상태
+3. 하기의 계정으로 로그인한 상태
+- 계정 : Technician
+4. UI 언어가 English 인 상태
+[데이터] None
+[절차] 1. Settings 좌측 메뉴를 확인한다.
+2. 로그아웃하고 Admin 계정으로 로그인한 뒤 Settings 좌측 메뉴를 확인한다.
+[기대] 1. Slipsheet 메뉴가 표시되지 않는지 확인
+2. Slipsheet 메뉴가 표시되는지 확인
+

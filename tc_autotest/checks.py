@@ -360,3 +360,8 @@ def match_check(title, text=""):
         if any(all(w in t for w in group) for group in c["match"]):
             return c
     return None
+
+
+# 기능별 루틴 (CHECKS 에 등록됨) — 맨 끝에서 불러와야 순환 import 가 없음
+from . import checks_sd024  # noqa: E402,F401
+from . import checks_toolio  # noqa: E402,F401
