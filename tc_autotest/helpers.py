@@ -34,14 +34,29 @@ def right_of(ui, label_el, ctype):
 
 
 # ---------------------------------------------------------------- 화면 이동
-def go_home(ctx):
-    ui = ctx.ui
+def _on_home(ui):
     try:
-        if ui.on_home():
-            return
-    except Exception:
-        pass
-    ui.back_to_home()
+        return ui.on_home()
+    except Exception:  # noqa: BLE001  Settings 전체화면이면 root() 가 없음
+        return False
+
+
+def go_home(ctx):
+    """어느 화면이든 Home 으로. Settings 전체화면에선 왼쪽 메뉴 맨 위(계정 버튼 다음) 아이콘이 Home."""
+    ui = ctx.ui
+    if _on_home(ui):
+        return
+    w = ui.wrapper()
+    if "Change Account" in ui.top_names():  # 계정 메뉴가 열려 있으면 닫기
+        ui.esc()
+    left = w.rectangle().left
+    rail = sorted([b for b in ui.top_all("Button") if not b.window_text() and b.rectangle().left - left < 40
+                   and b.rectangle().width() > 0 and b.rectangle().top < w.rectangle().top + 650], key=lambda b: b.rectangle().top)
+    if rail:
+        ui.click(rail[0], settle=2.5, label="Home")
+        discard_if_asked(ctx)
+    if not _on_home(ui):
+        ui.back_to_home()
 
 
 def settings(ctx, sub):
@@ -113,9 +128,10 @@ def ensure_role(ctx, role):
         raise NotApplicable(f"{role} 계정 비밀번호가 Windows 자격 증명에 없음")
     ui.click(ui.top_find(f"{now[0]} {now}") if now else ui.top_all("Button")[0], settle=2, label="계정 메뉴")
     tgt = next((b for b in ui.top_all("Button") if (b.window_text() or "").lower() == f"{role[0]} {role}".lower()), None)
-    if tgt is None:
+    if tgt is None:  # Change Account 목록에 없는 계정(doosan 등) → 로그아웃 후 로그인 화면에서 계정 이름을 직접 입력
         ui.esc()
-        raise NotApplicable(f"계정 목록에 {role} 없음")
+        login_typed(ctx, role, pw)
+        return
     ui.click(tgt, settle=2, label=f"계정 {role}")
     prompt = next((t for t in texts(ui) if (t.window_text() or "").startswith("Please enter the password")), None)
     if prompt is not None:
@@ -251,3 +267,46 @@ def leave_and(ctx, button):
 
 def wait(sec):
     time.sleep(sec)
+
+
+def login_typed(ctx, account, pw):
+    """Settings > General > Log Out → 로그인 화면 Account 칸에 이름 입력 → Password → Log In.
+    (Admin 의 Change Account 목록엔 Operator 만 있고 doosan 은 없음 — 11-02 실측)"""
+    from pywinauto import keyboard
+
+    from .fginput import Foreground
+    ui = ctx.ui
+    settings(ctx, "General")
+    ui.click(ui.top_find("Log Out"), settle=3, label="Log Out")
+    for c in ("Log Out", "Confirm", "OK", "Yes"):
+        b = ui.top_find(c)
+        if b is not None and b.rectangle().top > 300:
+            ui.click(b, settle=3, label=f"로그아웃 확인 {c}")
+            break
+    w = ui.wrapper()
+    check(ui.wait_for(lambda: any(b.window_text() == "Log In" for b in w.descendants(control_type="Button")), 15),
+          "로그인 화면이 나오지 않음")
+    acc = next(e for e in w.descendants(control_type="Text") if e.window_text() == "Account")
+    acc_box = next(b for b in w.descendants(control_type="Button") if b.rectangle().top > acc.rectangle().bottom - 5
+                   and abs(b.rectangle().left - acc.rectangle().left) < 30)
+    pwd_lab = next(e for e in w.descendants(control_type="Text") if e.window_text() == "Password")
+    pwd = min((e for e in w.descendants(control_type="Edit") if e.rectangle().top > pwd_lab.rectangle().bottom - 5),
+              key=lambda e: e.rectangle().top)
+    with Foreground(ui):
+        r = acc_box.rectangle()
+        acc_box.click_input(coords=(r.width() // 3, r.height() // 2))
+        time.sleep(0.5)
+        keyboard.send_keys("^a{BACKSPACE}", pause=0.03)
+        keyboard.send_keys(account, pause=0.04)
+        time.sleep(0.5)
+        keyboard.send_keys("{ESC}")
+        pwd.click_input()
+        time.sleep(0.3)
+        keyboard.send_keys(pw.replace("{", "{{}").replace("}", "{}}").replace("+", "{+}").replace("^", "{^}")
+                           .replace("%", "{%}").replace("~", "{~}").replace("(", "{(}").replace(")", "{)}"), pause=0.04)
+        time.sleep(0.3)
+        next(b for b in w.descendants(control_type="Button") if b.window_text() == "Log In").click_input()
+        time.sleep(4)
+    if not ui.wait_for(lambda: ui.current_role() == account, 30):
+        raise EnvError(f"{account} 로그인 실패 (계정·비밀번호 확인)")
+    ui.remember_nav()

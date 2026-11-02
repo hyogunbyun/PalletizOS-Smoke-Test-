@@ -24,6 +24,22 @@ def _force_foreground(hwnd):
         if user32.GetForegroundWindow() == hwnd:
             return True
         time.sleep(0.05)
+    # 보조: 지금 앞 창의 입력 스레드에 붙어서 넘겨받기 (Windows 포그라운드 잠금 회피)
+    fg = user32.GetForegroundWindow()
+    kernel32 = ctypes.windll.kernel32
+    t_fg = user32.GetWindowThreadProcessId(fg, None)
+    t_me = kernel32.GetCurrentThreadId()
+    user32.AttachThreadInput(t_me, t_fg, True)
+    try:
+        user32.BringWindowToTop(hwnd)
+        user32.SetForegroundWindow(hwnd)
+        user32.SetFocus(hwnd)
+    finally:
+        user32.AttachThreadInput(t_me, t_fg, False)
+    for _ in range(20):
+        if user32.GetForegroundWindow() == hwnd:
+            return True
+        time.sleep(0.05)
     return False
 
 
