@@ -16,3 +16,7 @@ video/intro_assets/
 # 비밀값은 Windows 자격 증명에만 둔다 — 혹시 생기는 로컬 파일도 제외
 *.secret
 .env
+
+# TC 자동평가 개발용 조사 기록
+tc_autotest/dev/*.log
+tc_autotest/dev/dumps/

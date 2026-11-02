@@ -547,7 +547,7 @@ def main():
         url = report.as_uri()
         try:
             if ensure_running():
-                url = f"http://127.0.0.1:{PORT}/results/{outdir.name}/report.html"
+                url = f"http://127.0.0.1:{PORT}/results/{outdir.relative_to(ROOT / 'results').as_posix()}/report.html"  # TC 자동평가는 results/tc/ 아래
         except Exception as e:
             log(f"이슈 등록 서버를 띄우지 못함 → 파일로 엶 ({e})")
         ok = webbrowser.open(url)

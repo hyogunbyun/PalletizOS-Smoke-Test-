@@ -29,6 +29,15 @@ Dr.Dart-Platform의 PalletizOS 모듈을 **가상 제어기**에서 자동으로
 - 실행 중 다른 업무 가능(마우스를 쓰지 않음). 단 **Dr.Dart 앱 창 최소화·직접 조작 금지**
 - 결과: `results\<날짜_시각>\report.html`, 사건 기록 `results\events.log`
 
+## 3-1. TC·체크리스트 자동 평가 (별도 툴 — 스모크와 독립)
+- 바탕화면 **`PalletizOS_TC_import.bat`**(또는 `tc_import.bat`) → **[엑셀 가져오기…]** → 행마다 자동 점검 루틴 매칭 결과 미리보기 → **[자동 평가 시작]**
+- 사내 표준 TC 양식(8행 머리글 B~AD)과 자유 양식 체크리스트(머리글에 `기대결과/Expect` 열, 또는 `점검 내용`+`결과` 열) 모두 읽음
+- 결과는 원본을 건드리지 않고 원본 옆 **`<이름>_자동판정_<시각>.xlsx`** 사본에 기록: Result(Pass/Fail/NT)·Comment(`[자동] 근거`)·Tester·Test Date. 결과 열이 없는 체크리스트는 오른쪽에 '자동 판정·판정 근거·판정 일시' 열을 덧붙임
+- 자동 점검 루틴이 없는 행은 **NT + 수동 사유**(Move To·Start·Super Admin 권한·Save 필요 등)
+- 스모크와 같은 엔진·안전 규칙: 화면을 열고 읽기만 하며 Save·Start·Move To·Restore·업로드는 누르지 않음, ■ 종료 한 번이면 멈춤
+- 명령줄: `tc_run.bat <엑셀>` · 매칭만 보기: `.venv\Scripts\python.exe tc_run.py <엑셀> --dry` · 실행 기록: `results\tc\<시각>\`
+- 점검 루틴 추가: `tc_autotest\checks.py` 에 `@tc_check(키, 제목, 설명, match=[(낱말, …)])` 함수 하나
+
 ## 4. 선택 기능
 | 기능 | 처음 한 번 | 사용 |
 |---|---|---|

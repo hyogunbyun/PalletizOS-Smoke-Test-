@@ -64,9 +64,9 @@ def save_state(s):
 
 
 def smoke_running():
-    """다른 스모크 실행(run_smoke.py)이 돌고 있는지."""
+    """다른 스모크 실행(run_smoke.py) 또는 TC 자동평가(tc_run.py)가 돌고 있는지."""
     r = subprocess.run(["powershell", "-NoProfile", "-Command",
-                        "(Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | Where-Object { $_.CommandLine -match 'run_smoke' } | Measure-Object).Count"],
+                        "(Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | Where-Object { $_.CommandLine -match 'run_smoke|tc_run' } | Measure-Object).Count"],
                        capture_output=True, text=True, creationflags=subprocess.CREATE_NO_WINDOW)
     try:
         return int((r.stdout or "0").strip() or 0) > 0
