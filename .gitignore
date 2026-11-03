@@ -22,3 +22,4 @@ tc_autotest/dev/*.log
 tc_autotest/dev/dumps/
 tc_autotest/dev/s*.py
 tools/menus/tc_*.txt
+startup_backup/

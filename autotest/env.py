@@ -1,6 +1,8 @@
 """실행 환경 준비: 시뮬레이터 → 앱 → 제어기 연결 → PalletizOS 진입. 이미 된 단계는 건너뛴다."""
 import os
 import subprocess
+
+_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)  # 감시기(pythonw)에서 wsl.exe 콘솔 창이 깜빡 뜨지 않게 (11-04)
 import time
 import winreg
 
@@ -14,7 +16,7 @@ PF = EL["platform"]
 
 def _docker(*args, timeout=60):
     r = subprocess.run(["wsl.exe", "-d", "rancher-desktop", "-e", "docker", *args],
-                       capture_output=True, text=True, timeout=timeout)
+                       capture_output=True, creationflags=_NO_WINDOW, text=True, timeout=timeout)
     return r.stdout.strip()
 
 
@@ -22,7 +24,7 @@ def docker_ready():
     """Docker 엔진(Rancher Desktop의 WSL)이 응답하는지."""
     try:
         r = subprocess.run(["wsl.exe", "-d", "rancher-desktop", "-e", "docker", "info", "--format", "{{.ServerVersion}}"],
-                           capture_output=True, text=True, timeout=30)
+                           capture_output=True, creationflags=_NO_WINDOW, text=True, timeout=30)
         return r.returncode == 0 and bool(r.stdout.strip())
     except (subprocess.TimeoutExpired, OSError):
         return False
@@ -156,12 +158,12 @@ def launch_app():
 
 def app_running():
     # 바이트로 받음: tasklist는 한국어 콘솔 인코딩(cp949)으로 출력 → UTF-8 모드(-X utf8)에서 text=True면 해석 실패로 None (2026-10-22)
-    r = subprocess.run(["tasklist", "/FI", "IMAGENAME eq Dr.Dart-Platform.exe", "/NH"], capture_output=True)
+    r = subprocess.run(["tasklist", "/FI", "IMAGENAME eq Dr.Dart-Platform.exe", "/NH"], capture_output=True, creationflags=_NO_WINDOW)
     return b"Dr.Dart-Platform.exe" in (r.stdout or b"")
 
 
 def kill_app():
-    subprocess.run(["taskkill", "/IM", "Dr.Dart-Platform.exe", "/F"], capture_output=True)
+    subprocess.run(["taskkill", "/IM", "Dr.Dart-Platform.exe", "/F"], capture_output=True, creationflags=_NO_WINDOW)
     # 3초 고정 대기 대신 프로세스가 전부 사라질 때까지(최대 20초): 덜 죽은 프로세스가 남으면 다음 실행 앱이
     # 단일 실행 잠금 때문에 뜨자마자 스스로 꺼짐 (2026-10-26 10:37 '앱 창이 안정되지 않음' 추정 원인)
     for _ in range(40):

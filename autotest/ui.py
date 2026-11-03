@@ -71,6 +71,9 @@ def pause(sec):
     check_stop()
 
 
+VER_RE = r"v\d+\.\d+\.\d+(?:-[\w.]+)?"
+
+
 class EnvError(Exception):
     """제품 결함이 아니라 실행 환경 문제 (언어, 창 없음, 사용자 개입 등)."""
 
@@ -315,15 +318,17 @@ class UI:
     # ---------- 탐색 ----------
     def root(self):
         """PalletizOS 영역 = 'v1.1.0' 버전 텍스트의 부모 그룹. 뒤에 깔린 Platform 화면과 분리한다."""
+        # 상위 계정(Internal 등)은 빌드 번호까지 'v2.0.0-25' 로 표시함 (2026-11-02 doosan 로그인 실측) → 둘 다 인정
         for t in self.win.descendants(control_type="Text"):
-            if re.fullmatch(r"v\d+\.\d+\.\d+", t.window_text() or ""):
+            if re.fullmatch(VER_RE, t.window_text() or ""):
                 return t.parent()
         raise EnvError("PalletizOS 화면이 열려 있지 않음")
 
     def version(self):
+        """화면 버전 'v2.0.0' (빌드 번호 표시 계정이면 앞부분만)."""
         for t in self.root().children(control_type="Text"):
-            if re.fullmatch(r"v\d+\.\d+\.\d+", t.window_text() or ""):
-                return t.window_text()
+            if re.fullmatch(VER_RE, t.window_text() or ""):
+                return t.window_text().split("-")[0]
 
     def _all(self, root=None, ctype=None):
         root = root or self.root()
@@ -680,7 +685,7 @@ class UI:
     def nav_items(self):
         """좌측 메뉴(역할에 따라 개수가 다름). 버전 텍스트 아래, Recovery 위의 버튼들."""
         root = self.root()
-        ver = next(t for t in root.children(control_type="Text") if re.fullmatch(r"v\d+\.\d+\.\d+", t.window_text()))
+        ver = next(t for t in root.children(control_type="Text") if re.fullmatch(VER_RE, t.window_text()))
         vr = ver.rectangle()
         rec = self.by_name(P["recovery"])
         out = []

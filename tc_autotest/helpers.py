@@ -64,6 +64,8 @@ def settings(ctx, sub):
     ui = ctx.ui
     if ui.top_find(sub) is None:
         go_home(ctx)
+        if _on_home(ui):  # Home 의 펼친 메뉴에서 순서를 다시 기억 (다른 화면에서 기억한 순서가 덮여 'Settings 못 찾음' — 11-02)
+            ui.remember_nav()
         ui.goto("Settings")
         check(ui.wait_for(lambda: ui.top_find("General") is not None, 8), "Settings 화면이 열리지 않음")
     ui.click(ui.top_find(sub), settle=2.5, label=f"Settings {sub}")
@@ -130,6 +132,9 @@ def ensure_role(ctx, role):
     tgt = next((b for b in ui.top_all("Button") if (b.window_text() or "").lower() == f"{role[0]} {role}".lower()), None)
     if tgt is None:  # Change Account 목록에 없는 계정(doosan 등) → 로그아웃 후 로그인 화면에서 계정 이름을 직접 입력
         ui.esc()
+        if now not in ("Admin", "doosan") and role != "Admin":
+            # Operator 등엔 Settings(로그아웃 버튼)가 없음 → 먼저 Admin 으로 (11-02: 앱 재시작 후 기본 계정 Operator 로 들어와 막힘)
+            ensure_role(ctx, "Admin")
         login_typed(ctx, role, pw)
         return
     ui.click(tgt, settle=2, label=f"계정 {role}")

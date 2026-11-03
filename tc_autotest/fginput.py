@@ -69,8 +69,21 @@ class Foreground:
         return False
 
 
+def scroll_into_view(ui, elem):
+    """화면 아래로 벗어난 입력칸·버튼을 보이게 (Settings > Robot 처럼 긴 화면)."""
+    wr = ui.wrapper().rectangle()
+    r = elem.rectangle()
+    if r.top < wr.top + 120 or r.bottom > wr.bottom - 160:
+        try:
+            elem.iface_scroll_item.ScrollIntoView()
+            time.sleep(0.8)
+        except Exception:
+            pass
+
+
 def type_into(ui, edit, text, commit="{TAB}"):
     """입력칸을 클릭해 포커스 → 전체 선택 → 입력 → commit 키(기본 Tab = 포커스 이동으로 확정)."""
+    scroll_into_view(ui, edit)
     with Foreground(ui):
         r = edit.rectangle()
         edit.click_input(coords=(r.width() - 8, r.height() // 2))  # 단위 글자 앞, 입력칸 안쪽
@@ -85,6 +98,7 @@ def type_into(ui, edit, text, commit="{TAB}"):
 
 def real_click(ui, elem, settle=1.0):
     """UIA 누르기로 반응하지 않는 컨트롤(드롭다운 등)을 실제 마우스로 클릭 — 앱을 잠깐 앞으로."""
+    scroll_into_view(ui, elem)
     with Foreground(ui):
         elem.click_input()
         time.sleep(settle)
