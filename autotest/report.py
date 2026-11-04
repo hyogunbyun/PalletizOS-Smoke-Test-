@@ -39,6 +39,10 @@ a{color:var(--env)}.tc{font-weight:700;white-space:nowrap}
 .dot.na{background:#c5cad3}.dot.env{background:var(--env)}
 details summary{cursor:pointer;color:var(--sub);font-size:13px}
 .wrap{overflow-x:auto}
+.diag{margin:8px 0 4px;border:1px solid var(--line);border-left:4px solid var(--bad);border-radius:8px;padding:8px 12px;background:#fffafa}
+.diag.ext{border-left-color:var(--env);background:#f7faff}.diag.tool{border-left-color:var(--na);background:#fafbfc}
+.diag h4{margin:0 0 4px;font-size:13.5px}.diag ul{margin:4px 0 4px 18px;padding:0;font-size:13px}
+.diag .k{color:var(--sub);font-size:12px}.diag table{border:0;margin-top:4px}.diag td,.diag th{padding:3px 8px;font-size:12.5px}
 """
 
 
@@ -49,6 +53,45 @@ def _e(s):
 # 리포트 제목 — TC 자동 평가(tc_run.py)가 바꿔 씀, 스모크는 그대로
 TITLE = "PalletizOS Home 스모크 결과"
 PAGE_TITLE = "PalletizOS 스모크"
+
+
+NATURE_CLS = {"앱": "", "외부": "ext", "자동화": "tool"}
+METRICS = [("app_procs", "앱 프로세스 수"), ("main_pid", "앱 본체 pid"), ("app_ws_mb", "앱 메모리 합계(MB)"),
+           ("sys_load_pct", "PC 메모리 사용률(%)"), ("sys_avail_mb", "PC 남은 메모리(MB)"), ("sys_commit_avail_mb", "남은 커밋(MB)"),
+           ("ctrl_docker", "Docker 응답"), ("ctrl_drcf_pid", "제어기 DRCF pid"), ("ctrl_listening", "제어기 포트 12345"),
+           ("ctrl_crash_count", "제어기 누적 충돌(rc=139)"), ("pc_locked", "PC 잠김"), ("pc_idle_sec", "마지막 사용자 입력(초 전)"),
+           ("pc_foreground", "맨 앞 창")]
+
+
+def _diag_html(a):
+    """시도 1건의 원인 추정 블록 (autotest/diag.py 결과)."""
+    d = a.get("diag")
+    if not d:
+        return ""
+    ev = "".join(f"<li><span class='k'>[{_e(x['nature'])}·{_e(x['label'])}]</span> {_e(x['text'])}</li>" for x in d["evidence"])
+    b, f = d.get("before", {}), d.get("after", {})
+    mt = "".join(f"<tr><td>{_e(n)}</td><td>{_e(b.get(k, ''))}</td><td>{_e(f.get(k, ''))}</td></tr>"
+                 for k, n in METRICS if k in b or k in f)
+    lg = d.get("log", {})
+    groups = "".join(f"<tr><td>{g['count']}</td><td>{'기준 목록' if g['known'] else '<b>새 에러</b>'}</td><td><code>{_e(g['first'])}</code></td></tr>"
+                     for g in lg.get("groups", []))
+    evs = "".join(f"<li>{_e(e['time'])} · 이벤트 {_e(e['id'])} · {_e(e['msg'])}</li>" for e in d.get("events", []))
+    dumps = "".join(f"<li>{_e(x)}</li>" for x in d.get("dumps", []))
+    tail = "\n".join(lg.get("tail", []))
+    return (f"<div class='diag {NATURE_CLS.get(d['nature'], '')}'><h4>시도 {a['attempt']} 실패 원인 추정: {_e(d['label'])} "
+            f"<span class='k'>({_e(d['nature'])} 요인{' · 예외 ' + _e(d['exception']) if d.get('exception') else ''})</span></h4>"
+            f"<div>{_e(d['cause'])}</div>"
+            + (f"<ul>{ev}</ul>" if ev else "<div class='k'>뚜렷한 외부 이상 징후 없음 (앱·PC·제어기 정상)</div>")
+            + f"<div class='k'>앱 로그(이 시도 구간): {lg.get('lines', 0)}줄 · 에러 {lg.get('errors', 0)} · 경고 {lg.get('warns', 0)}"
+              f" · 기준 목록에 없는 새 에러 {lg.get('new_groups', 0)}종</div>"
+            + "<details><summary>근거 데이터 (시작 vs 실패 시점 · 로그 · 이벤트)</summary>"
+            + f"<table><tr><th>항목</th><th>시도 시작</th><th>실패 시점</th></tr>{mt}</table>"
+            + (f"<table><tr><th>횟수</th><th>구분</th><th>에러 로그 (같은 종류는 첫 줄)</th></tr>{groups}</table>" if groups else "")
+            + (f"<div class='k'>Windows 이벤트</div><ul>{evs}</ul>" if evs else "<div class='k'>Windows 이벤트: 앱 오류·응답 없음·메모리 부족 기록 없음</div>")
+            + (f"<div class='k'>새 크래시 덤프</div><ul>{dumps}</ul>" if dumps else "")
+            + (f"<div class='k'>실패 직전 앱 로그 마지막 {len(lg.get('tail', []))}줄</div><pre>{_e(tail)}</pre>" if tail else "")
+            + (f"<div class='k'>예외 위치</div><pre>{_e(a.get('trace', ''))}</pre>" if a.get("trace") else "")
+            + "</details></div>")
 
 
 def write_report(run, outdir: Path, hist):
@@ -66,6 +109,8 @@ def write_report(run, outdir: Path, hist):
                 extra.append(f'<div class="msg">시도 {a["attempt"]}: {links}</div>')
             if a.get("restore"):
                 extra.append(f'<div class="msg err">{_e(a["restore"])}</div>')
+            if r["status"] in ("fail", "flaky", "env") or a.get("status") in ("fail", "env"):
+                extra.append(_diag_html(a))
         if r.get("new_errors"):
             items = "".join(f"<pre>{_e(line)}</pre>" for line in r["new_errors"].values())
             extra.append(f"<details><summary>새 로그 에러 {len(r['new_errors'])}종</summary>{items}</details>")

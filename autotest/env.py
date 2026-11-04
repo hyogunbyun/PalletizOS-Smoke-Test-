@@ -436,7 +436,25 @@ def _login_if_needed(ui, log, wait=20):
     button = PF["palletizos_login"]["button"]
     if not ui.wait_for(lambda: ui.win_button(button) is not None, timeout=wait):
         return
-    log("PalletizOS 로그인 (기본 계정)")
+    # Account 칸에 비밀번호가 필요한 계정(Admin 등)이 골라져 있으면 그냥 Log In 해도 안 들어가 여기서 멈춤 (2026-11-04 11:21)
+    # → 자동화 계정(secret.LOGIN_ACCOUNT, doosan) 으로, 안 되면 비밀번호 없는 Operator 로
+    from . import secret
+    from tc_autotest.helpers import login_screen
+    acct = secret.LOGIN_ACCOUNT
+    pw = secret.load(secret.ACCOUNT_TARGET.get(acct, ""))
+    if pw:
+        log(f"PalletizOS 로그인 ({acct})")
+        try:
+            if login_screen(ui, acct, pw):
+                return
+        except Exception as e:  # noqa: BLE001
+            log(f"  {acct} 로그인 실패: {e}")
+    log("PalletizOS 로그인 (Operator)")
+    try:
+        if login_screen(ui, "Operator", ""):
+            return
+    except Exception as e:  # noqa: BLE001
+        log(f"  Operator 로그인 실패: {e}")
     ui.click(ui.win_button(button), settle=4)
     if ui.win_button(button) is not None:
-        raise EnvError("PalletizOS 로그인 실패 — 기본 계정에 비밀번호가 필요할 수 있음 (Operator로 바꿔 두세요)")
+        raise EnvError(f"PalletizOS 로그인 실패 — 로그인 화면에서 {acct}·Operator 모두 들어가지 못함")

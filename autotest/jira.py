@@ -123,6 +123,21 @@ def registered(run):
         return {}
 
 
+def _diag_text(r):
+    """시도별 원인 추정 (autotest/diag.py) → JIRA 본문."""
+    out = []
+    for a in r.get("attempts", []):
+        d = a.get("diag")
+        if not d:
+            continue
+        out.append(f"\nh3. {a['attempt']}차 시도 원인 추정: {d['label']} ({d['nature']} 요인)\n{d['cause']}")
+        out += [f"* [{x['label']}] {x['text']}" for x in d["evidence"]] or ["* 뚜렷한 외부 이상 징후 없음 (앱·PC·제어기 정상)"]
+        b, f = d.get("before", {}), d.get("after", {})
+        out.append(f"* 앱 프로세스 {b.get('app_procs')}→{f.get('app_procs')}개 · 앱 메모리 {b.get('app_ws_mb')}→{f.get('app_ws_mb')}MB"
+                   f" · PC 메모리 사용률 {f.get('sys_load_pct')}% · 제어기 충돌 {b.get('ctrl_crash_count', '?')}→{f.get('ctrl_crash_count', '?')}")
+    return "\n".join(out) + ("\n" if out else "")
+
+
 def preview(run, tc):
     d, data, r = _result(run, tc)
     pv, plat = data.get("palletizos_version") or "?", data.get("platform_version") or "?"
@@ -148,7 +163,7 @@ h3. 항목
 
 h3. 실패 내용
 {tries}
-""" + (f"""
+""" + _diag_text(r) + (f"""
 h3. 실행 중 새로 찍힌 앱 로그 에러
 {{noformat}}
 {errs}

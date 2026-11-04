@@ -30,7 +30,8 @@ SHORT = {"CFG_DEFAULT": "툴설정 기본", "CFG_ADDZONE": "Add Zone", "CFG_NODE
          "MODEL_POPUP": "3D 팝업", "SMOKE_MONITOR": "스모크 H04·05", "SMOKE_TOOLLIST": "스모크 S04", "SMOKE_ALL": "스모크 전체",
          "SD024_01": "024 기본", "SD024_02": "024 저장", "SD024_03": "024 Type", "SD024_04": "024 경계",
          "SD024_05": "024 이탈", "SD024_06": "024 단위",
-         "TIO_04": "빈 주소", "TIO_05": "Reducer 빈", "TIO_06": "Blow off", "TIO_07": "주소 중복", "TIO_08": "Double", "TIO_09": "신호 타입"}
+         "TIO_04": "빈 주소", "TIO_05": "Reducer 빈", "TIO_06": "Blow off", "TIO_07": "주소 중복", "TIO_08": "Double", "TIO_09": "신호 타입",
+         "CEIL_19": "천장 기본", "CEIL_20": "천장 mm", "CEIL_21": "천장 in", "CEIL_22": "여유<0", "CEIL_23": "여유 0", "CEIL_24": "베이스", "CEIL_25": "리프트", "CEIL_29": "Admin 배너", "CEIL_32": "오프셋"}
 
 
 def plan(path):
@@ -167,7 +168,9 @@ def main():
             if x["status"] in ("pass", "warn", "flaky") and msg.startswith("[부분]"):
                 # 자동으로 확인한 단계는 모두 통과, 눈으로 볼 기대(3D 색·질감 등)만 남음 → Result 는 NT, 근거에 명시
                 x["status"], msg = "partial", "자동 부분 통과 — " + msg[len("[부분]"):].strip()
-            x["msg"] = msg + f" · 루틴 {x['check']}"
+            d = next((t.get("diag") for t in reversed(r.get("attempts", [])) if t.get("diag")), None)
+            x["msg"] = msg + (f" · 원인 추정: {d['label']} ({d['nature']} 요인)" if d and x["status"] in ("fail", "env") else "") \
+                + f" · 루틴 {x['check']}"
         else:
             x["status"], x["msg"] = "na", nt_reason(x["text"])
     dest = write_results(wb, rows, dest_dir=wb.parent)

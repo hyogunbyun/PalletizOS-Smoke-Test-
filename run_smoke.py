@@ -21,7 +21,7 @@ sys.stdout.reconfigure(encoding="utf-8")
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 
-from autotest import env, secret  # noqa: E402
+from autotest import diag, env, secret  # noqa: E402
 from autotest.flows import FLOWS, SHORT, NotApplicable  # noqa: E402
 import autotest.flows_menus  # noqa: E402,F401  (메뉴 흐름 등록: Recipes·IO·Log·Settings·Jog +·Quick Log·Recovery)
 import autotest.flows_crawl  # noqa: E402,F401  (전체 클릭 점검 K01~K08·K99)
@@ -57,6 +57,21 @@ def _watch_console_close():
         return 0  # 기본 처리(종료)는 그대로
     _watch_console_close.ref = handler  # 가비지 수집 방지
     ctypes.windll.kernel32.SetConsoleCtrlHandler(handler, 1)
+
+
+def console_window(show):
+    """실행기 콘솔(검은 cmd 창)을 최소화(show=False)·복원(True). 2026-11-04 사용자 요청: cmd 창이 계속 떠 있음 → 최소화.
+    Windows Terminal 에 뜬 콘솔은 GetConsoleWindow 가 가짜 창이라 소유 창(터미널 본 창)까지 같이 처리한다."""
+    import ctypes
+    u, k = ctypes.windll.user32, ctypes.windll.kernel32
+    u.GetAncestor.restype = ctypes.c_void_p
+    h = k.GetConsoleWindow()
+    if not h:
+        return
+    cmd = 9 if show else 6  # SW_RESTORE / SW_MINIMIZE
+    for w in {h, u.GetAncestor(h, 3)}:  # GA_ROOTOWNER
+        if w and u.IsWindowVisible(w):
+            u.ShowWindow(w, cmd)
 
 
 def env_log(msg):
@@ -184,6 +199,15 @@ def _back_to_role(ctx, role):
         login_typed(ctx, role, secret.load(secret.ACCOUNT_TARGET[role]) if role in secret.ACCOUNT_TARGET else "")
 
 
+def _diagnose(rec, pre, ctx):
+    """실패·환경 오류 원인 추정 (autotest/diag.py) → rec["diag"]. 진단이 실패해도 실행은 계속."""
+    try:
+        rec["diag"] = diag.analyze(pre, rec.get("msg", ""), rec.get("trace", ""), ctx.log.new_lines(), rec["status"])
+        log(f"  원인 추정: {rec['diag']['label']} ({rec['diag']['nature']} 요인)")
+    except Exception as e:  # noqa: BLE001
+        rec["diag_error"] = f"{type(e).__name__}: {e}"[:200]
+
+
 def run_flow(f, ctx, outdir):
     ui = ctx.ui
     attempts = []
@@ -201,6 +225,10 @@ def run_flow(f, ctx, outdir):
         t0 = time.time()
         rec = {"attempt": attempt, "status": "pass", "msg": ""}
         ctx.note, ctx.files = "", {}
+        try:
+            pre = diag.snapshot()
+        except Exception:  # noqa: BLE001
+            pre = {"at": time.time()}
         env.dismiss_license_notice(ui, env_log)  # 업데이트 뒤 뜨는 안내창이 화면을 가리면 모든 항목이 멈춤 (2026-11-04)
         try:
             f["fn"](ctx)
@@ -210,7 +238,8 @@ def run_flow(f, ctx, outdir):
         except UserInterference:
             raise
         except EnvError as e:
-            rec.update(status="env", msg=str(e))
+            rec.update(status="env", msg=str(e), trace=traceback.format_exc(limit=3))
+            _diagnose(rec, pre, ctx)
         except Exception as e:  # AssertionError 포함
             rec.update(status="fail", msg=str(e) or type(e).__name__,
                        trace=traceback.format_exc(limit=3))
@@ -223,6 +252,7 @@ def run_flow(f, ctx, outdir):
                     rec["log"] = lp.name
             except Exception:
                 pass
+            _diagnose(rec, pre, ctx)
         rec.update(ctx.files)
         rec["sec"] = round(time.time() - t0, 1)
         rec["new_errors"] = ctx.log.new_errors()
@@ -397,6 +427,7 @@ def main():
     ev(f"실행 시작: 결과 폴더 {outdir.name}, 항목 {len(flows)}개" + (f" (--only {' '.join(a.only)})" if a.only else "") +
        f", 입력 방식 {ui.mode}")
     _watch_console_close()
+    console_window(False)  # 진행 상황은 상태 표시창에 나옴 → 콘솔은 작업 표시줄로 (닫지는 말 것: 닫으면 자동화가 멈춤)
     guard = None
     if ui.mode == "background" and EL.get("focus_guard", True) and os.environ.get("SMOKE_NO_FOCUS_GUARD") != "1":  # 앱이 스스로 앞으로 나와 포커스를 가져가면 쓰던 창으로 되돌림
         from autotest.focusguard import FocusGuard
@@ -407,6 +438,10 @@ def main():
     try:
         env.ensure_ready(ui, env_log)
         ui.remember_nav()
+        try:
+            diag.remember_controller()  # 제어기 충돌 횟수 기준값 (실패 때 늘었는지 비교)
+        except Exception:  # noqa: BLE001
+            pass
         start_role = ui.wait_role()
         run["start_role"] = start_role
         ctx.admin_ok, admin_err = start_role == secret.LOGIN_ACCOUNT, None
@@ -419,6 +454,7 @@ def main():
                          desc="검은 콘솔 창(PalletizOS_smoke)에 Admin 비밀번호를 입력하고 엔터 (글자는 안 보임, 엔터만 = 건너뜀). "
                               "한 번 성공하면 저장되어 다음부터는 묻지 않음",
                          step="콘솔 창에서 입력을 기다리는 중", action="")
+                console_window(True)  # 비밀번호 입력은 콘솔에서 → 잠깐 다시 보이게
                 pw = getpass.getpass("Recipes·Log·Settings 확인용 Admin 비밀번호 (화면에 표시 안 됨, 엔터 = 건너뜀): ") or None
                 typed = bool(pw)
             env_log("Admin으로 계정 전환" if pw else "Admin 비밀번호 없음 → Admin 전용 흐름은 건너뜀")

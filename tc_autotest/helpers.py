@@ -274,12 +274,77 @@ def wait(sec):
     time.sleep(sec)
 
 
-def login_typed(ctx, account, pw):
-    """Settings > General > Log Out → 로그인 화면 Account 칸에 이름 입력 → Password → Log In.
-    (Admin 의 Change Account 목록엔 Operator 만 있고 doosan 은 없음 — 11-02 실측)"""
+def _acc_box(w):
+    """'Account' 글자 바로 아래(80px 안) 버튼. 로그인 화면 밑에 Settings 화면 요소가 그대로 남아 있어
+    조건이 느슨하면 'Settings' 버튼을 Account 칸으로 잡음 (2026-11-04 11:21·11:33 doosan 로그인 실패 원인)."""
+    acc = next(e for e in w.descendants(control_type="Text") if e.window_text() == "Account"
+               and e.element_info.rectangle.width() > 0)
+    ar = acc.rectangle()
+    cand = [b for b in w.descendants(control_type="Button") if b.element_info.rectangle.width() > 0
+            and 0 <= b.rectangle().top - ar.bottom < 80 and abs(b.rectangle().left - ar.left) < 30]
+    return min(cand, key=lambda b: b.rectangle().top - ar.bottom)
+
+
+def _keys(s):
+    return "".join("{%s}" % c if c in "{}+^%~()" else c for c in s)
+
+
+def login_screen(ui, account, pw):
+    """PalletizOS 로그인 화면(Account 드롭다운 · Password · Log In)에서 account 로 로그인. 성공하면 True.
+
+    Account 칸은 이름이 현재 계정인 버튼(드롭다운, 11-04 실측 'Button Admin'). ① 펼쳐서 목록의 account 항목 클릭
+    ② 목록에 없으면 칸에 이름 입력 + Enter. 어느 쪽이든 칸 글자가 account 로 바뀐 것을 확인한 뒤에만 비밀번호 입력."""
     from pywinauto import keyboard
 
     from .fginput import Foreground
+    w = ui.wrapper()
+    want = account.lower()
+    picked = lambda: (_acc_box(w).window_text() or "").strip().lower() == want  # noqa: E731
+    with Foreground(ui):
+        for how in ("list", "type"):
+            if picked():
+                break
+            box = _acc_box(w)
+            r = box.rectangle()
+            before = {e.element_info.runtime_id for e in w.descendants()}
+            box.click_input(coords=(r.width() // 3, r.height() // 2))
+            time.sleep(1.0)
+            opt = next((e for e in w.descendants() if e.element_info.runtime_id not in before
+                        and (e.window_text() or "").strip().lower() == want and e.element_info.rectangle.width() > 0), None)
+            if how == "list" and opt is not None:
+                opt.click_input()
+            elif how == "type":
+                keyboard.send_keys("^a{BACKSPACE}", pause=0.03)
+                keyboard.send_keys(_keys(account), pause=0.05)
+                time.sleep(0.8)
+                opt = next((e for e in w.descendants() if (e.window_text() or "").strip().lower() == want
+                            and e.element_info.rectangle.width() > 0 and e.rectangle().top > r.bottom - 5), None)
+                if opt is not None:
+                    opt.click_input()
+                else:
+                    keyboard.send_keys("{ENTER}")
+            else:
+                keyboard.send_keys("{ESC}")
+            time.sleep(1.0)
+        if not picked():
+            keyboard.send_keys("{ESC}")
+            return False
+        pwd_lab = next(e for e in w.descendants(control_type="Text") if e.window_text() == "Password")
+        pwd = min((e for e in w.descendants(control_type="Edit") if e.rectangle().top > pwd_lab.rectangle().bottom - 5),
+                  key=lambda e: e.rectangle().top)
+        pwd.click_input()
+        time.sleep(0.3)
+        keyboard.send_keys("^a{BACKSPACE}", pause=0.03)
+        keyboard.send_keys(_keys(pw), pause=0.04)
+        time.sleep(0.3)
+        next(b for b in w.descendants(control_type="Button") if b.window_text() == "Log In").click_input()
+        time.sleep(4)
+    return ui.wait_for(lambda: (ui.current_role() or "").lower() == want, 30)
+
+
+def login_typed(ctx, account, pw):
+    """Settings > General > Log Out → 로그인 화면에서 account 로 로그인 (login_screen).
+    (Admin 의 Change Account 목록엔 Operator 만 있고 doosan 은 없음 — 11-02 실측)"""
     ui = ctx.ui
     settings(ctx, "General")
     ui.click(ui.top_find("Log Out"), settle=3, label="Log Out")
@@ -291,27 +356,10 @@ def login_typed(ctx, account, pw):
     w = ui.wrapper()
     check(ui.wait_for(lambda: any(b.window_text() == "Log In" for b in w.descendants(control_type="Button")), 15),
           "로그인 화면이 나오지 않음")
-    acc = next(e for e in w.descendants(control_type="Text") if e.window_text() == "Account")
-    acc_box = next(b for b in w.descendants(control_type="Button") if b.rectangle().top > acc.rectangle().bottom - 5
-                   and abs(b.rectangle().left - acc.rectangle().left) < 30)
-    pwd_lab = next(e for e in w.descendants(control_type="Text") if e.window_text() == "Password")
-    pwd = min((e for e in w.descendants(control_type="Edit") if e.rectangle().top > pwd_lab.rectangle().bottom - 5),
-              key=lambda e: e.rectangle().top)
-    with Foreground(ui):
-        r = acc_box.rectangle()
-        acc_box.click_input(coords=(r.width() // 3, r.height() // 2))
-        time.sleep(0.5)
-        keyboard.send_keys("^a{BACKSPACE}", pause=0.03)
-        keyboard.send_keys(account, pause=0.04)
-        time.sleep(0.5)
-        keyboard.send_keys("{ESC}")
-        pwd.click_input()
-        time.sleep(0.3)
-        keyboard.send_keys(pw.replace("{", "{{}").replace("}", "{}}").replace("+", "{+}").replace("^", "{^}")
-                           .replace("%", "{%}").replace("~", "{~}").replace("(", "{(}").replace(")", "{)}"), pause=0.04)
-        time.sleep(0.3)
-        next(b for b in w.descendants(control_type="Button") if b.window_text() == "Log In").click_input()
-        time.sleep(4)
-    if not ui.wait_for(lambda: ui.current_role() == account, 30):
+    if not login_screen(ui, account, pw):
+        # 로그인 화면에 멈춰 있지 않게 (11-04 11:21: doosan 입력 실패 → Admin 선택·비번 빈 채로 멈춤) → Admin 으로라도 다시 들어감
+        apw = secret.load(ACCOUNT_TARGET["Admin"])
+        if account != "Admin" and apw and login_screen(ui, "Admin", apw):
+            raise EnvError(f"{account} 로그인 실패 (로그인 화면 Account 에서 '{account}' 를 고르지 못함) → Admin 으로 다시 로그인함")
         raise EnvError(f"{account} 로그인 실패 (계정·비밀번호 확인)")
     ui.remember_nav()
