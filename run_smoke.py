@@ -53,10 +53,107 @@ def _watch_console_close():
 
     @ctypes.WINFUNCTYPE(ctypes.c_int, ctypes.c_uint)
     def handler(kind):
-        ev(f"실행기 강제 종료: {names.get(kind, kind)} — 결과는 마지막 항목까지 중간 저장분만 남음")
+        ev(f"실행기 강제 종료: {names.get(kind, kind)} — 여기까지 현황으로 리포트 작성")
+        # 창 닫힘은 Windows 가 약 5초 뒤 강제로 끝냄 → 진단 없이 빠르게 현황 리포트만 (2026-11-04 12:36: 리포트 없이 끝남)
+        _partial_report(f"{names.get(kind, kind)} — 실행기 강제 종료", final=True, open_=kind in (0, 1, 2))
         return 0  # 기본 처리(종료)는 그대로
     _watch_console_close.ref = handler  # 가비지 수집 방지
     ctypes.windll.kernel32.SetConsoleCtrlHandler(handler, 1)
+
+
+# 중간 현황 리포트 — 실행이 어디서 끝나든(■ 종료·콘솔 닫힘·멈춤·강제 종료) 그때까지의 현황이 report.html 에 남게.
+# 2026-11-04 사용자 요청: "중간에 자동화 종료되어도 현재까지 현황을 리포트" (11:37 실행이 R03에서 멈춘 뒤 리포트 없이 끝남)
+CUR = {"run": None, "ctx": None, "flows": [], "outdir": None, "expect": None, "tc": None, "t0": None, "final": False}
+STOP_HUNG_SEC = 45  # ■ 종료 뒤 이만큼 지나도 실행기가 반응 없으면 멈춘 것으로 보고 현황 리포트 후 끝냄
+
+
+def _partial_report(why, final=False, open_=False):
+    """끝난 항목 + 진행 중이던 항목(마지막 단계) + 남은 항목으로 리포트. final=True 면 '중단' 판정·이력 기록 (한 번만)."""
+    run, outdir = CUR["run"], CUR["outdir"]
+    if run is None or outdir is None or CUR["final"]:
+        return None
+    if final:
+        CUR["final"] = True
+    try:
+        r = json.loads(json.dumps(run, ensure_ascii=False))  # 사본 — 실행 중인 run 은 건드리지 않음
+        if CUR["ctx"] is not None:
+            r.update(CUR["ctx"].info)
+        done = {x["tc"] for x in r["results"]}
+        st = LIVE.state
+        for f in CUR["flows"]:
+            if f["tc"] in done:
+                continue
+            base = {"tc": f["tc"], "title": f["title"], "desc": f["desc"], "attempts": [], "new_errors": {}, "sec": 0}
+            if f["tc"] == CUR["tc"] and CUR["t0"]:
+                sec = time.time() - CUR["t0"]
+                r["results"].append({**base, "status": "env" if final else "run", "sec": round(sec, 1),
+                                     "msg": f"{'여기서 멈춤 — ' if final else '진행 중 — '}{sec / 60:.1f}분째 · "
+                                            f"마지막 단계: {st.get('step') or '-'} · 마지막 동작: {st.get('action') or '-'}"})
+            else:
+                r["results"].append({**base, "status": "stopped" if final else "wait",
+                                     "msg": f"실행되지 않음 — {why}" if final else ""})
+        r["verdict"] = "중단" if final else "진행 중"
+        if final:
+            r["stopped"], r["finished"] = True, datetime.now().isoformat(timespec="seconds")
+            r["notes"] = [f"중간에 끝남: {why}",
+                          f"완료 {len(done)} / 전체 {len(CUR['flows'])}개 — 나머지는 실행되지 않음 → 재실행 필요",
+                          "원상복구를 하지 못함 — 화면 값이 시작 상태와 다를 수 있음"] + r.get("notes", [])
+            r["restored"], r["restore_diff"] = False, ["중간 종료로 원상복구 못 함"]
+        else:
+            r["notes"] = [f"진행 중 — {len(done)} / {len(CUR['flows'])}개 완료 (30초마다 새로 고침)"] + r.get("notes", [])
+        hist = json.loads(HISTORY.read_text(encoding="utf-8")) if HISTORY.exists() else []
+        hist.append({"started": r["started"], "dir": outdir.name, "verdict": r["verdict"],
+                     "palletizos_version": r.get("palletizos_version"), "platform_version": r.get("platform_version"),
+                     "flows": {x["tc"]: x["status"] for x in r["results"]}})
+        if final:
+            (outdir / "result.json").write_text(json.dumps(r, ensure_ascii=False, indent=1), encoding="utf-8")
+            HISTORY.write_text(json.dumps(hist[-50:], ensure_ascii=False, indent=1), encoding="utf-8")
+        p = write_report(r, outdir, hist)
+        if open_:
+            try:  # 이슈 등록 버튼은 등록 서버 주소로 연 리포트에서만 동작 (정상 마무리와 같음)
+                from autotest.issue_server import PORT, ensure_running
+                rel = outdir.relative_to(ROOT / "results").as_posix()
+                url = f"http://127.0.0.1:{PORT}/results/{rel}/report.html" if ensure_running() else p.as_uri()
+            except Exception:  # noqa: BLE001
+                url = p.as_uri()
+            webbrowser.open(url)
+            ev(f"중간 종료 현황 리포트 열기: {url}")
+        return p
+    except Exception as e:  # noqa: BLE001  리포트 실패가 실행을 막지 않게
+        ev(f"중간 현황 리포트 작성 실패: {type(e).__name__}: {str(e)[:150]}")
+        return None
+
+
+def _watch_hung_stop():
+    """■ 종료를 눌렀는데 실행기가 UIA 호출 등에서 멈춰 반응하지 않으면(11-04 R03 50분 멈춤) 현황 리포트를 남기고 끝낸다."""
+    import threading
+
+    def loop():
+        while not CUR["final"]:
+            time.sleep(2)
+            try:
+                if not STOP_FILE.exists() or STOP_FILE.read_text(encoding="utf-8").strip() not in ("", "stop"):
+                    continue
+                if time.time() - STOP_FILE.stat().st_mtime < STOP_HUNG_SEC:
+                    continue
+            except OSError:
+                continue
+            ev(f"■ 종료 뒤 {STOP_HUNG_SEC}초 동안 실행기 반응 없음 ({CUR['tc'] or '환경 준비'} 진행 중 멈춤) → 현황 리포트 후 종료")
+            try:  # 감시기가 이 버전을 다시 자동 실행하지 않게 (정상 ■ 종료와 같음)
+                from autotest.installer import installed_version
+                ver = (CUR["expect"] or "").lstrip("v") or installed_version()
+                if ver:
+                    (STOP_FILE.parent / "user_stop.json").write_text(json.dumps(
+                        {"version": ver, "at": datetime.now().isoformat(timespec="seconds")}, ensure_ascii=False), encoding="utf-8")
+            except Exception:  # noqa: BLE001
+                pass
+            STOP_FILE.unlink(missing_ok=True)
+            _partial_report(f"■ 종료 — 실행기가 {CUR['tc'] or '환경 준비'}에서 멈춰 반응하지 않음", final=True, open_=True)
+            LIVE.set(badge="STOP", flow="자동화 중단됨", desc="멈춘 상태에서 종료 — 현황 리포트를 브라우저로 엽니다",
+                     step="", action="", foot="자동화 중단됨 · 이 표시는 60초 뒤 사라집니다", done=True, linger=60)
+            time.sleep(1.5)
+            os._exit(3)
+    threading.Thread(target=loop, daemon=True).start()
 
 
 def console_window(show):
@@ -435,6 +532,8 @@ def main():
         guard.start()
     run = {"started": started.isoformat(timespec="seconds"), "expect_version": expect,
            "platform_version": env.platform_version(), "results": [], "notes": []}
+    CUR.update(run=run, ctx=ctx, flows=flows, outdir=outdir, expect=expect)
+    _watch_hung_stop()
     try:
         env.ensure_ready(ui, env_log)
         ui.remember_nav()
@@ -484,6 +583,7 @@ def main():
             log(f"{f['tc']} {f['title']}")
             LIVE.set(badge="ING", index=i + 1, flow=f"{f['tc']} · {f['title']}", desc=f["desc"])
             LIVE.set_chip(f["tc"], "run")
+            CUR["tc"], CUR["t0"] = f["tc"], time.time()
             try:
                 if f["admin"] and not ctx.admin_ok:
                     res = {"tc": f["tc"], "title": f["title"], "desc": f["desc"], "status": "env",
@@ -496,6 +596,8 @@ def main():
                                                          encoding="utf-8")
                 except Exception:
                     pass
+                CUR["tc"] = None
+                _partial_report(None)  # 진행 중 현황 리포트 (30초마다 새로 고침) — 어디서 끝나도 여기까지는 남음
                 LIVE.set_chip(f["tc"], res["status"])
                 sub = FLASH_SUB.get(res["status"], "")
                 # 항목이 끝난 순간에만 큰 배지에 그 항목 결과(PASS/FAIL…)를 1초 표시 — 제목이 아직 이 항목이라 섞이지 않음.
@@ -579,6 +681,7 @@ def main():
                                    "msg": f"실행되지 않음 — {why}", "attempts": [], "new_errors": {}, "sec": 0})
         run["notes"].append(f"{len(missing)}개 항목이 실행되지 않음 → 재실행 필요")
     run.update(ctx.info)
+    CUR["final"] = True  # 여기부터는 정상 마무리 → 콘솔 닫힘·멈춤 감시가 현황 리포트로 덮어쓰지 않게
     if guard is not None:
         guard.stop()
         run["focus_restored"] = guard.restored

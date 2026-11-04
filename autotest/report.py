@@ -3,10 +3,11 @@ import html
 from pathlib import Path
 
 LABEL = {"pass": ("통과", "ok"), "warn": ("주의·새 로그 에러", "warn"), "flaky": ("불안정·재시도 통과", "warn"),
-         "fail": ("실패", "bad"), "na": ("해당없음", "na"), "env": ("환경 오류", "env")}
+         "fail": ("실패", "bad"), "na": ("해당없음", "na"), "env": ("환경 오류", "env"),
+         "run": ("진행 중", "warn"), "wait": ("대기", "na"), "stopped": ("미실행", "na")}  # 중간 현황 리포트용 (run_smoke._partial_report)
 LINK_NAME = {"shot": "스크린샷", "log": "앱 로그", "tree": "UI 트리", "detail": "클릭 기록"}
 ISSUE_UI = Path(__file__).with_name("report_issue.html")  # FAIL 행 '이슈 등록' 버튼용 CSS·창·스크립트
-VERDICT_CLS = {"통과": "ok", "통과(주의)": "warn", "보류": "bad", "재실행 필요": "env", "중단": "env"}
+VERDICT_CLS = {"통과": "ok", "통과(주의)": "warn", "보류": "bad", "재실행 필요": "env", "중단": "env", "진행 중": "warn"}
 
 CSS = """
 :root{--bg:#f6f7f9;--card:#fff;--ink:#1d2330;--sub:#5b6475;--line:#e3e6eb;
@@ -147,6 +148,7 @@ def write_report(run, outdir: Path, hist):
 
     doc = f"""<!doctype html><html lang="ko"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>{PAGE_TITLE}</title>
+{'<meta http-equiv="refresh" content="30">' if v == "진행 중" else ""}
 <style>{CSS}</style></head><body data-run="{_e(outdir.name)}"><main>
 <h1>{TITLE}</h1>
 <div class="sub">{_e(run["started"].replace("T", " "))} ~ {_e((run.get("finished") or "진행 중")[11:] or "진행 중")} · 가상 제어기 127.0.0.1 (dev-simulator)</div>
