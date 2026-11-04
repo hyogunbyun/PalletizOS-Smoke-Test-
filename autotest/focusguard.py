@@ -23,6 +23,7 @@ user32.GetAncestor.restype = wt.HWND
 
 APP_TITLE = "Dr.Dart-Platform"
 TASKBAR = ("Shell_TrayWnd", "Shell_SecondaryTrayWnd")
+HOLD = threading.Event()  # 켜져 있는 동안 되돌리지 않음 — 로그인 이름·비밀번호처럼 앱을 일부러 앞으로 가져와 입력할 때 (fginput.Foreground)
 
 
 class _LII(ctypes.Structure):
@@ -87,7 +88,7 @@ class FocusGuard(threading.Thread):
                 fg = user32.GetForegroundWindow()
                 if fg == last:
                     continue
-                if _is_app(fg) and self.user_fg and not PAUSE_FILE.exists() and not _user_switched(fg):
+                if _is_app(fg) and self.user_fg and not PAUSE_FILE.exists() and not HOLD.is_set() and not _user_switched(fg):
                     give_back_focus(self.user_fg, fg)
                     self.restored += 1
                     if self.restored <= 3 or self.restored % 20 == 0:

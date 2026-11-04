@@ -4,6 +4,7 @@
 볼 수 있는 기대는 확인하지 못하므로 ctx.note 를 '[부분]' 으로 시작해 '부분 자동'으로 기록한다(Result 는 NT).
 모든 루틴은 시작 때의 Slipsheet 설정·단위를 기억했다가 끝나면 원래대로 저장해 둔다.
 """
+from autotest import secret
 from autotest.flows import NotApplicable, check
 
 from .checks import tc_check
@@ -14,7 +15,7 @@ SR = "sr024"
 
 def _run(ctx, unit, body, pre=None):
     """공통 틀: Admin → 단위 맞춤 → Slipsheet 진입·원래 값 기억 → (전제 저장) → body → 원래대로."""
-    ensure_role(ctx, "Admin")
+    ensure_role(ctx, secret.LOGIN_ACCOUNT)
     unit0 = set_unit(ctx, unit) if unit else None
     s = Slip(ctx)
     s.open()

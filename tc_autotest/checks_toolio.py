@@ -5,6 +5,7 @@
 """
 import time
 
+from autotest import secret
 from autotest.flows import NotApplicable, check
 from autotest.flows_menus import _io_tab, _open
 
@@ -20,7 +21,7 @@ class ToolCfg:
         self.ctx, self.ui = ctx, ctx.ui
 
     def open(self):
-        ensure_role(self.ctx, "Admin")
+        ensure_role(self.ctx, secret.LOGIN_ACCOUNT)
         settings(self.ctx, "Tool")
         self.ui.click(self.ui.top_find("Configuration"), settle=2.5, label="Tool Configuration")
         check(self.ui.wait_for(lambda: TITLE in self.ui.top_names(), 6), "Tool Configuration 팝업이 열리지 않음")

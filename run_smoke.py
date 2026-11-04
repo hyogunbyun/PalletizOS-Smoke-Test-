@@ -154,6 +154,36 @@ def capture(ui, outdir, tag):
 RESULT_BADGE = {"pass": "PASS", "fail": "FAIL", "warn": "WARN", "flaky": "WARN", "na": "N/A", "env": "SKIP"}
 
 
+def _work_login(ctx):
+    """Admin 전용 항목을 돌릴 계정(secret.LOGIN_ACCOUNT, 현재 doosan)으로 로그인. 비밀번호는 Windows 자격 증명에서만.
+    doosan 은 Change Account 목록에 없음 → Admin 을 거쳐 Settings > General > Log Out → 로그인 화면에 이름·비밀번호 입력."""
+    acct = secret.LOGIN_ACCOUNT
+    if ctx.ui.current_role() == acct:
+        return
+    if acct == "Admin":
+        ctx.ui.login_as("Admin", secret.load())
+        return
+    from tc_autotest.helpers import ensure_role
+    try:
+        ensure_role(ctx, acct)
+    except NotApplicable as e:  # 자격 증명 없음
+        raise EnvError(str(e))
+    except AssertionError as e:  # 로그인 화면 요소를 못 찾음 등
+        raise EnvError(f"{acct} 로그인 실패: {e}")
+
+
+def _back_to_role(ctx, role):
+    """끝나고 시작 계정(보통 Operator)으로. 목록에 없으면 로그아웃 후 이름 입력(Operator 는 비밀번호 없음)."""
+    ui = ctx.ui
+    try:
+        ui.login_as(role, secret.load(secret.ACCOUNT_TARGET[role]) if role in secret.ACCOUNT_TARGET else None)
+    except EnvError:
+        if "Change Account" in ui.top_names():
+            ui.esc()
+        from tc_autotest.helpers import login_typed
+        login_typed(ctx, role, secret.load(secret.ACCOUNT_TARGET[role]) if role in secret.ACCOUNT_TARGET else "")
+
+
 def run_flow(f, ctx, outdir):
     ui = ctx.ui
     attempts = []
@@ -161,8 +191,8 @@ def run_flow(f, ctx, outdir):
         ev(f"{f['tc']} 시작 전: 앱이 실행 중이 아님 (외부에서 닫힘 의심) → 다시 실행·연결")
         log("  앱이 꺼져 있음 → 다시 실행·연결")
         env.ensure_ready(ui, env_log)
-        if getattr(ctx, "admin_ok", False) and ui.current_role() != "Admin":
-            ui.login_as("Admin", secret.load())
+        if getattr(ctx, "admin_ok", False) and ui.current_role() != secret.LOGIN_ACCOUNT:
+            _work_login(ctx)
     for attempt in (1, 2):
         LIVE.set(badge="ING", step="", action="", foot=("자동화 실행 중 · 마우스/키보드를 만지지 마세요" if ctx.ui.mode == "mouse"
                                                         else "백그라운드 실행 중 · 다른 업무를 해도 됩니다 (앱 창 최소화만 하지 마세요)")
@@ -231,9 +261,9 @@ def run_flow(f, ctx, outdir):
                                               f"원상복구 실패 → 실행기가 앱 강제 종료·재시작 (원인: {why[:120]})"))
             env.kill_app()
             env.ensure_ready(ui, env_log)
-            if getattr(ctx, "admin_ok", False) and ui.current_role() != "Admin":
+            if getattr(ctx, "admin_ok", False) and ui.current_role() != secret.LOGIN_ACCOUNT:
                 try:  # 재시작하면 기본 계정(Operator)으로 로그인됨 → Admin 메뉴 항목이 계속 실패하지 않게 다시 전환
-                    ui.login_as("Admin", secret.load())
+                    _work_login(ctx)
                 except Exception as e2:
                     rec["restore"] += f" / Admin 재로그인 실패 ({e2})"
             try:
@@ -379,7 +409,7 @@ def main():
         ui.remember_nav()
         start_role = ui.wait_role()
         run["start_role"] = start_role
-        ctx.admin_ok, admin_err = start_role == "Admin", None
+        ctx.admin_ok, admin_err = start_role == secret.LOGIN_ACCOUNT, None
         if not ctx.admin_ok and any(f["admin"] for f in flows):
             # 비밀번호 출처: 환경변수 → Windows 자격 증명(저장분) → 직접 입력(.bat 실행 시만). 파일에는 남기지 않음
             pw = os.environ.pop("PALLETIZOS_ADMIN_PW", None) or secret.load()
@@ -395,6 +425,9 @@ def main():
             if pw:
                 try:
                     ui.login_as("Admin", pw)
+                    if secret.LOGIN_ACCOUNT != "Admin":
+                        env_log(f"{secret.LOGIN_ACCOUNT} 계정으로 로그인 (로그아웃 → 이름·비밀번호 입력)")
+                        _work_login(ctx)
                     ctx.admin_ok = True
                     if typed:
                         secret.save(pw)  # 성공한 비밀번호만 저장 → 다음 실행부터 자동
@@ -451,7 +484,7 @@ def main():
             if start_role and ui.current_role() != start_role:
                 LIVE.set(step=f"시작 계정({start_role})으로 되돌리기", action="")
                 try:
-                    ui.login_as(start_role)
+                    _back_to_role(ctx, start_role)
                 except Exception as e:
                     final.append(f"계정 원복 실패 ({start_role}): {e}")
             run["restored"] = not final
@@ -486,7 +519,7 @@ def main():
             try:
                 ctx.restore_all()
                 if run.get("start_role") and ui.current_role() != run["start_role"]:
-                    ui.login_as(run["start_role"])
+                    _back_to_role(ctx, run["start_role"])
                 run["restored"], run["restore_diff"] = True, []
             except BaseException as e:
                 run["restored"], run["restore_diff"] = False, [f"종료 후 복구 실패: {e}"]

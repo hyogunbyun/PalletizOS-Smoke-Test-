@@ -11,7 +11,7 @@ from autotest.ui import EnvError
 
 from .fginput import real_click, type_into
 
-ACCOUNT_TARGET = {"Admin": secret.TARGET, "doosan": "PalletizOS-Smoke-Account-doosan"}
+ACCOUNT_TARGET = secret.ACCOUNT_TARGET
 
 
 def cy(e):

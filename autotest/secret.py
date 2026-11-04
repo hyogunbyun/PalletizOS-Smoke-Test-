@@ -8,6 +8,10 @@ import ctypes.wintypes as wt
 import sys
 
 TARGET = "PalletizOS-Smoke-Admin"
+# 자동화가 Admin 전용 항목(Recipes·Log·Settings 등)을 돌릴 때 쓰는 계정 (2026-11-04 사용자 요청: doosan 으로 변경).
+# doosan 은 Change Account 목록에 없어 Operator → Admin → 로그아웃 → 로그인 화면에서 이름·비밀번호 입력으로 들어감.
+LOGIN_ACCOUNT = "doosan"
+ACCOUNT_TARGET = {"Admin": TARGET, "doosan": "PalletizOS-Smoke-Account-doosan"}
 CRED_TYPE_GENERIC, CRED_PERSIST_LOCAL_MACHINE = 1, 2
 advapi32 = ctypes.WinDLL("advapi32", use_last_error=True)
 

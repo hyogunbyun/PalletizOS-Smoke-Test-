@@ -53,8 +53,11 @@ class Foreground:
     def __enter__(self):
         if HIDE_OVERLAY:
             HIDE_OVERLAY(True)
+        from autotest.focusguard import HOLD
+        HOLD.set()
         self.prev = user32.GetForegroundWindow()
         if not _force_foreground(self.ui.hwnd()):
+            HOLD.clear()
             raise RuntimeError("앱 창을 앞으로 가져오지 못함")
         time.sleep(0.2)
         return self
@@ -64,6 +67,8 @@ class Foreground:
             if self.prev and self.prev != self.ui.hwnd():
                 _force_foreground(self.prev)
         finally:
+            from autotest.focusguard import HOLD
+            HOLD.clear()
             if HIDE_OVERLAY:
                 HIDE_OVERLAY(False)
         return False
