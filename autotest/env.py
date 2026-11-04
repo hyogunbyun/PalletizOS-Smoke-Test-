@@ -205,8 +205,10 @@ def _ensure_ready(ui: UI, log=print):
     ui.ensure_maximized()
     _connect_if_needed(ui, log)
     _take_over_if_needed(ui, log)
+    dismiss_license_notice(ui, log)
     _skip_tour(ui)
     _open_palletizos(ui, log)
+    dismiss_license_notice(ui, log)
     ui.check_language()
 
 
@@ -311,6 +313,35 @@ def _skip_tour(ui):
         ui.click(b, settle=1.5)
 
 
+LICENSE_TEXTS = ("License Activation", "Virtual simulation is available without a license.")
+
+
+def dismiss_license_notice(ui, log=print):
+    """'License Activation' 안내창(가상 시뮬레이션은 라이선스 없이 가능)이 떠 있으면 OK 로 닫는다. 닫았으면 True.
+
+    2.0.0-27 설치 뒤 이 창이 앱 위에 떠서 다른 버튼이 모두 가려져 실행이 멈춤 (2026-11-04 10:39).
+    정보 안내일 뿐이라 OK 만 누른다 (Need help? 는 누르지 않음)."""
+    try:
+        w = ui.wrapper()
+        texts = [t for t in w.descendants(control_type="Text") if t.element_info.rectangle.width() > 0
+                 and any(k in (t.window_text() or "") for k in LICENSE_TEXTS)]
+        if not texts:
+            return False
+        top = min(t.rectangle().top for t in texts)
+        ok = [b for b in w.descendants(control_type="Button") if (b.window_text() or "").strip() in ("OK", "확인")
+              and b.element_info.rectangle.width() > 0 and b.rectangle().top > top]
+        if not ok:
+            return False
+        ui.click(min(ok, key=lambda b: b.rectangle().top - top), settle=1.5, label="License 안내 OK")
+        log("License Activation 안내창 닫음 (OK)")
+        from .events import ev
+        ev("License Activation 안내창이 떠 있어 OK 로 닫음")
+        return True
+    except Exception as e:  # noqa: BLE001  못 닫아도 다음 단계에서 다시 시도
+        log(f"License 안내창 닫기 실패: {e}")
+        return False
+
+
 def close_platform_settings(ui, log=print):
     """Platform 'Settings' 탭이 열려 있으면 탭의 X 로 닫는다. 닫았으면 True.
 
@@ -388,6 +419,7 @@ def _open_palletizos(ui, log):
             return False
     end, logged = time.time() + 180, False
     while time.time() < end:
+        dismiss_license_notice(ui, log)
         if opened():
             break
         if not logged and ui.win_button(PF["palletizos_login"]["button"]) is not None:

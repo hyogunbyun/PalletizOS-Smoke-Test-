@@ -79,6 +79,7 @@ def _to_platform_home(ui, log):
     ui.ensure_maximized()
     env._connect_if_needed(ui, log)
     env._take_over_if_needed(ui, log)
+    env.dismiss_license_notice(ui, log)
     env._skip_tour(ui)
     time.sleep(2)
     ui.warm_up()

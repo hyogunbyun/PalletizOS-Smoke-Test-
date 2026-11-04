@@ -171,6 +171,7 @@ def run_flow(f, ctx, outdir):
         t0 = time.time()
         rec = {"attempt": attempt, "status": "pass", "msg": ""}
         ctx.note, ctx.files = "", {}
+        env.dismiss_license_notice(ui, env_log)  # 업데이트 뒤 뜨는 안내창이 화면을 가리면 모든 항목이 멈춤 (2026-11-04)
         try:
             f["fn"](ctx)
             rec["msg"] = ctx.note
@@ -196,6 +197,7 @@ def run_flow(f, ctx, outdir):
         rec["sec"] = round(time.time() - t0, 1)
         rec["new_errors"] = ctx.log.new_errors()
         LIVE.set(step="원상복구 중 (출발 상태로 되돌리기)", action="")
+        env.dismiss_license_notice(ui, env_log)
         try:
             ctx.restore_all()
         except UserInterference:
