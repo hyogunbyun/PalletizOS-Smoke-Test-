@@ -6,7 +6,8 @@
 - 같은 버전은 앱이 설치를 거부함(ERROR_INVALID_VERSION, 10-26 실측) → 높은 버전만
 - 같은 버전 설치 실패는 2번까지만 다시 시도 (results/watch_state.json)
 - 기록: results/events.log ([감시기]) + results/watch.log
-실행: pythonw -m autotest.watcher (로그온 시 시작프로그램) / --once (한 번만 확인) / 멈춤: results/watch.stop 파일
+실행: pythonw -m autotest.watcher --boot (로그온 시 시작프로그램 — 하루 첫 로그온에 한 번만 확인하고 끝, 2026-11-04 사용자 요청)
+      / pythonw -m autotest.watcher (30분마다 계속, 바탕화면 watch_start) / --once (지금 한 번) / 멈춤: results/watch.stop 파일
 """
 import json
 import os
@@ -193,7 +194,16 @@ def run_smoke_for(ver, st):
 
 def main():
     once = "--once" in sys.argv
-    if not once:
+    boot = "--boot" in sys.argv
+    if boot:  # 로그온 때 하루 한 번만 — 오늘 이미 확인했으면 바로 끝 (재부팅·재로그온 때 또 돌지 않게)
+        st = load_state()
+        today = datetime.now().strftime("%Y-%m-%d")
+        if st.get("boot_day") == today:
+            return
+        st["boot_day"] = today
+        save_state(st)
+        once = True
+    if boot or not once:
         if LOCK.exists():  # 이미 다른 감시기가 돌고 있으면 종료
             try:
                 pid = int(LOCK.read_text())
@@ -205,8 +215,11 @@ def main():
             except (OSError, ValueError):
                 pass
         LOCK.write_text(str(os.getpid()))
-        STOPF.unlink(missing_ok=True)
-        wlog(f"감시 시작: {github.REPO} · {INTERVAL // 60}분마다")
+        if boot:
+            wlog(f"로그온 확인 (하루 1회): {github.REPO}")
+        else:
+            STOPF.unlink(missing_ok=True)
+            wlog(f"감시 시작: {github.REPO} · {INTERVAL // 60}분마다")
     try:
         while True:
             try:
@@ -221,7 +234,7 @@ def main():
                     return
                 time.sleep(10)
     finally:
-        if not once:
+        if boot or not once:
             LOCK.unlink(missing_ok=True)
 
 
