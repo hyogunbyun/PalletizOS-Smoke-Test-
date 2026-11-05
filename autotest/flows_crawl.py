@@ -41,7 +41,10 @@ def _content_left(ui):
     wr = ui.wrapper().rectangle()
     nav = [b.rectangle().right for b in ui.top_all("Button")
            if b.rectangle().left < wr.left + 60 and 0 < b.rectangle().width() < wr.width() / 3]
-    return (max(nav) if nav else wr.left) + 5
+    # 드롭다운 등 위층 화면에선 왼쪽 메뉴가 top_all 에 안 잡혀 x0 = 창 왼쪽 → 메뉴 맨 위 '→ 펼치기/접기'(이름 없는 버튼)를
+    # 눌러 메뉴가 접힘 → 버전 글자가 사라져 'PalletizOS 화면이 열려 있지 않음'으로 앱 강제 재시작 (2026-11-05 K01 매번: 14:05·15:01·15:10·15:25)
+    # → 위층에 안 보여도 왼쪽 메뉴 폭만큼은 항상 뺀다 (접힌 메뉴 폭 약 108px)
+    return max((max(nav) if nav else wr.left) + 5, wr.left + 115)
 
 
 def _elements(ui):

@@ -312,16 +312,28 @@ def _login_by_value(ui, account, pw):
     want = account.lower()
     box = _acc_box(w)
     ar = box.rectangle()
+    near = lambda e: (e.element_info.rectangle.width() > 0 and abs(e.rectangle().top - ar.top) < 40  # noqa: E731
+                      and ar.left - 5 <= e.rectangle().left <= ar.right)
     try:
-        if box.iface_expand_collapse.CurrentExpandCollapseState == 0:
+        st0 = box.iface_expand_collapse.CurrentExpandCollapseState
+        if st0 == 0:
             box.iface_expand_collapse.Expand()
     except Exception as e:  # noqa: BLE001
         return f"Account 펼치기 실패 ({e})"
-    time.sleep(1.0)
-    ed = next((e for e in w.descendants(control_type="Edit") if e.element_info.rectangle.width() > 0
-               and abs(e.rectangle().top - ar.top) < 40 and ar.left - 5 <= e.rectangle().left <= ar.right), None)
+    ed = None
+    t_end = time.time() + 4  # 앱을 막 켠 직후엔 펼침 반응이 늦음 (2026-11-05 14:46·15:26 재시작 직후 실패)
+    while ed is None and time.time() < t_end:
+        time.sleep(0.5)
+        ed = next((e for e in w.descendants(control_type="Edit") if near(e)), None)
     if ed is None:
-        return "Account 를 펼쳤는데 이름 입력칸이 안 보임"
+        try:
+            st1 = box.iface_expand_collapse.CurrentExpandCollapseState
+        except Exception:  # noqa: BLE001
+            st1 = "?"
+        eds = [(e.window_text()[:10], e.rectangle().left - ar.left, e.rectangle().top - ar.top)
+               for e in w.descendants(control_type="Edit") if e.element_info.rectangle.width() > 0]
+        return (f"Account 를 펼쳤는데 이름 입력칸이 안 보임 (펼침 상태 {st0}→{st1}, 칸 '{box.window_text()}' "
+                f"{ar.width()}x{ar.height()}, 보이는 입력칸(칸 기준 x,y) {eds[:4]})")
     ed.iface_value.SetValue(account)
     time.sleep(1.2)
     it = next((e for e in w.descendants(control_type="ListItem") if e.element_info.rectangle.width() > 0

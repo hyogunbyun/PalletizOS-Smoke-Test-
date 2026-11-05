@@ -29,6 +29,7 @@ import autotest.flows_custom  # noqa: E402,F401  (녹화 시나리오 C01… 등
 from autotest.live import Live  # noqa: E402
 from autotest.logcheck import LogWatcher  # noqa: E402
 from autotest.report import write_report  # noqa: E402
+from autotest import memwatch  # noqa: E402
 from autotest.ui import EL, MODE, P, SPEED, STOP_FILE, UI, EnvError, StopRequested, UserInterference, pause  # noqa: E402
 
 RESULTS = ROOT / "results"
@@ -298,11 +299,39 @@ def _back_to_role(ctx, role):
 
 def _diagnose(rec, pre, ctx):
     """실패·환경 오류 원인 추정 (autotest/diag.py) → rec["diag"]. 진단이 실패해도 실행은 계속."""
+    rec["mem1"] = memwatch.point()  # 실패 직후 (진단이 재는 값과 같은 시점)
     try:
         rec["diag"] = diag.analyze(pre, rec.get("msg", ""), rec.get("trace", ""), ctx.log.new_lines(), rec["status"])
+        if rec["diag"].get("category") == "app_memory":  # 의심 → 재현 명령 (누적형은 반복)
+            cum = any("누적 증가" in e["text"] for e in rec["diag"]["evidence"])
+            tc = CUR.get("tc") or "TC"
+            rec["diag"]["repro"] = f"python run_smoke.py --only {tc} --fresh" + (" --repeat 10" if cum else "")
         log(f"  원인 추정: {rec['diag']['label']} ({rec['diag']['nature']} 요인)")
     except Exception as e:  # noqa: BLE001
         rec["diag_error"] = f"{type(e).__name__}: {e}"[:200]
+
+
+def _run_repeat(f, ctx, outdir, n, run):
+    """메모리 재현: 같은 항목 n회. 회차마다 끝 시점 앱 메모리를 남김. 결과 한 건으로 합침."""
+    reps, attempts, worst = [], [], "pass"
+    rank = {"pass": 0, "flaky": 1, "warn": 1, "na": 2, "env": 3, "fail": 4}
+    last = None
+    for i in range(1, n + 1):
+        LIVE.set(step=f"메모리 재현 {i}/{n}회")
+        log(f"  반복 {i}/{n}")
+        last = run_flow(f, ctx, outdir)
+        a_last = (last.get("attempts") or [{}])[-1]
+        reps.append({"i": i, "status": last["status"], "mem0": a_last.get("mem0"), "mem1": a_last.get("mem1")})
+        for a in last.get("attempts", []):
+            attempts.append({**a, "attempt": f"{i}-{a['attempt']}"})
+        if rank.get(last["status"], 0) > rank.get(worst, 0):
+            worst = last["status"]
+        m = a_last.get("mem1") or {}
+        log(f"    → {last['status']} · 앱 전용 커밋 {m.get('pb')}MB · 작업 집합 {m.get('ws')}MB · PC {m.get('load')}%")
+    res = dict(last)
+    res.update(status=worst, attempts=attempts, repeats=reps, sec=round(sum(a.get("sec", 0) for a in attempts), 1),
+               msg=f"{n}회 반복 — " + ", ".join(f"{r['i']}:{r['status']}" for r in reps))
+    return res
 
 
 def run_flow(f, ctx, outdir):
@@ -327,6 +356,7 @@ def run_flow(f, ctx, outdir):
         except Exception:  # noqa: BLE001
             pre = {"at": time.time()}
         env.dismiss_license_notice(ui, env_log)  # 업데이트 뒤 뜨는 안내창이 화면을 가리면 모든 항목이 멈춤 (2026-11-04)
+        rec["mem0"] = memwatch.point()  # 항목별 앱 메모리 증가표·기준 데이터용 (통과한 항목도)
         try:
             f["fn"](ctx)
             rec["msg"] = ctx.note
@@ -351,6 +381,8 @@ def run_flow(f, ctx, outdir):
                 pass
             _diagnose(rec, pre, ctx)
         rec.update(ctx.files)
+        if "mem1" not in rec:
+            rec["mem1"] = memwatch.point()
         rec["sec"] = round(time.time() - t0, 1)
         rec["new_errors"] = ctx.log.new_errors()
         LIVE.set(step="원상복구 중 (출발 상태로 되돌리기)", action="")
@@ -490,6 +522,9 @@ def main():
     ap.add_argument("--no-overlay", action="store_true")
     ap.add_argument("--mode", choices=["background", "mouse"], help="입력 방식 (기본: elements.yaml input_mode)")
     ap.add_argument("--no-update-check", action="store_true", help="시작 팝업(GitHub 신규 버전 확인) 생략 — 감시기가 설치 직후 띄울 때")
+    ap.add_argument("--fresh", action="store_true", help="메모리 재현 확인: 앱을 끄고 다시 켠 직후 --only 한 항목만 (autotest/memwatch.py)")
+    ap.add_argument("--repeat", type=int, default=1, help="--fresh 와 함께: 같은 항목 N회 반복하며 회차별 앱 메모리 기록 (누적형 누수)")
+    ap.add_argument("--force", action="store_true", help="--fresh 와 함께: PC 메모리 85%% 이상이어도 강제 실행 ('확정'은 안 붙음)")
     a = ap.parse_args()
     # 한 번에 하나만: 2026-11-05 13:10~13:13 R05 단독 실행과 전체 실행이 겹쳐 서로 앱을 껐다 켜 둘 다 실패.
     # 이름 있는 뮤텍스는 프로세스가 죽으면 OS 가 자동으로 풀어 줌 (잠금 파일이 남는 문제 없음)
@@ -501,6 +536,19 @@ def main():
         time.sleep(8)
         return
     globals()["_RUNNER_MUTEX"] = _mtx  # 끝날 때까지 쥐고 있기
+    fresh_load = None
+    if a.fresh or a.repeat > 1:
+        if not a.only or len(a.only) != 1:
+            print(" --fresh / --repeat 는 --only 로 항목 하나만 지정하세요 (예: --only K01 --fresh --repeat 10)")
+            return 2
+        a.fresh = True
+        ok, why = memwatch.precheck(a.force)
+        ev(f"메모리 재현 확인 준비 ({a.only[0]} × {a.repeat}회): {why}")
+        print(f" {why}")
+        if not ok:
+            time.sleep(8)
+            return 3
+        fresh_load = diag.system_memory()["load_pct"]
     expect = a.expect
     if not a.no_update_check and not a.only:
         expect = _update_check() or expect
@@ -545,6 +593,10 @@ def main():
     CUR.update(run=run, ctx=ctx, flows=flows, outdir=outdir, expect=expect)
     _watch_hung_stop()
     try:
+        if a.fresh and env.app_running():
+            env_log("메모리 재현 확인: 앱을 끄고 다시 켬 (깨끗한 상태에서 시작)")
+            env.kill_app()
+            time.sleep(3)
         env.ensure_ready(ui, env_log)
         ui.remember_nav()
         try:
@@ -595,6 +647,7 @@ def main():
         ctx.snap0 = ui.snapshot()
         run["snap0"] = ctx.snap0
         log(f"출발 상태: {json.dumps(ctx.snap0, ensure_ascii=False)}")
+        run["mem_start"] = memwatch.point()
         for i, f in enumerate(flows):
             log(f"{f['tc']} {f['title']}")
             LIVE.set(badge="ING", index=i + 1, flow=f"{f['tc']} · {f['title']}", desc=f["desc"])
@@ -604,6 +657,8 @@ def main():
                 if f["admin"] and not ctx.admin_ok:
                     res = {"tc": f["tc"], "title": f["title"], "desc": f["desc"], "status": "env",
                            "msg": f"Admin 계정이 필요함 ({admin_err})", "attempts": [], "new_errors": {}, "sec": 0}
+                elif a.repeat > 1:
+                    res = _run_repeat(f, ctx, outdir, a.repeat, run)
                 else:
                     res = run_flow(f, ctx, outdir)
                 run["results"].append(res)
@@ -633,6 +688,7 @@ def main():
                     run["results"].append({"tc": g["tc"], "title": g["title"], "desc": g["desc"],
                                            "status": "env", "msg": str(e), "attempts": [], "new_errors": {}, "sec": 0})
                 break
+        run["mem_end"] = memwatch.point()
         if ctx.snap0:
             final = _diff(ctx.snap0, ui.snapshot()) if _home_visible(ui) else ["Home 화면이 아님"]
             if start_role and ui.current_role() != start_role:
@@ -705,6 +761,22 @@ def main():
             log(f"실행 중 앱이 포커스를 가져간 횟수: {guard.restored} (모두 쓰던 창으로 되돌림)")
     run["finished"] = datetime.now().isoformat(timespec="seconds")
     run["verdict"] = verdict(run["results"], run.get("stopped"))
+    try:  # 메모리: 재현 확인 판정 / 정상 실행이면 기준 데이터 추가 (autotest/memwatch.py)
+        if a.fresh and run["results"]:
+            r0 = run["results"][0]
+            reps = r0.get("repeats") or [{"i": 1, "status": r0["status"], "mem1": (r0.get("attempts") or [{}])[-1].get("mem1")}]
+            rep = memwatch.repro_verdict(r0["tc"], run, reps, a.force, fresh_load)
+            run["memory_repro"] = rep
+            (outdir / "memory_repro.json").write_text(json.dumps(rep, ensure_ascii=False, indent=1), encoding="utf-8")
+            run["notes"].insert(0, f"메모리 재현 확인 {r0['tc']}: {rep['result']} — {rep.get('basis', '')}")
+            ev(f"메모리 재현 확인 {r0['tc']} × {len(reps)}회: {rep['result']} — {rep.get('basis', '')}")
+        else:
+            run["memory_note"] = memwatch.add_sample(run, outdir.name, full=not a.only)
+            if "제안 준비됨" in run["memory_note"]:
+                run["notes"].append(run["memory_note"])
+                ev(run["memory_note"])
+    except Exception as e:  # noqa: BLE001
+        run["memory_note"] = f"메모리 처리 실패: {type(e).__name__}: {e}"
 
     hist = json.loads(HISTORY.read_text(encoding="utf-8")) if HISTORY.exists() else []
     prev = next((h for h in reversed(hist) if h.get("palletizos_version")), None)

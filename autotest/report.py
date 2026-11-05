@@ -57,7 +57,7 @@ PAGE_TITLE = "PalletizOS 스모크"
 
 
 NATURE_CLS = {"앱": "", "외부": "ext", "자동화": "tool"}
-METRICS = [("app_procs", "앱 프로세스 수"), ("main_pid", "앱 본체 pid"), ("app_ws_mb", "앱 메모리 합계(MB)"),
+METRICS = [("app_procs", "앱 프로세스 수"), ("main_pid", "앱 본체 pid"), ("app_pb_mb", "앱 전용 커밋 합계(MB)"), ("app_ws_mb", "앱 작업 집합 합계(MB)"),
            ("sys_load_pct", "PC 메모리 사용률(%)"), ("sys_avail_mb", "PC 남은 메모리(MB)"), ("sys_commit_avail_mb", "남은 커밋(MB)"),
            ("ctrl_docker", "Docker 응답"), ("ctrl_drcf_pid", "제어기 DRCF pid"), ("ctrl_listening", "제어기 포트 12345"),
            ("ctrl_crash_count", "제어기 누적 충돌(rc=139)"), ("pc_locked", "PC 잠김"), ("pc_idle_sec", "마지막 사용자 입력(초 전)"),
@@ -82,6 +82,8 @@ def _diag_html(a):
     return (f"<div class='diag {NATURE_CLS.get(d['nature'], '')}'><h4>시도 {a['attempt']} 실패 원인 추정: {_e(d['label'])} "
             f"<span class='k'>({_e(d['nature'])} 요인{' · 예외 ' + _e(d['exception']) if d.get('exception') else ''})</span></h4>"
             f"<div>{_e(d['cause'])}</div>"
+            + (f"<div style='margin-top:4px'><b>재현 명령</b> (앱 재시작 직후 같은 절차 · PC 메모리 85% 미만에서): <code>{_e(d['repro'])}</code></div>"
+               if d.get("repro") else "")
             + (f"<ul>{ev}</ul>" if ev else "<div class='k'>뚜렷한 외부 이상 징후 없음 (앱·PC·제어기 정상)</div>")
             + f"<div class='k'>앱 로그(이 시도 구간): {lg.get('lines', 0)}줄 · 에러 {lg.get('errors', 0)} · 경고 {lg.get('warns', 0)}"
               f" · 기준 목록에 없는 새 에러 {lg.get('new_groups', 0)}종</div>"
@@ -146,6 +148,11 @@ def write_report(run, outdir: Path, hist):
                   f"<code>approve_errors.bat</code>을 실행해 기준 목록에 추가하세요.</p>"
                   f"<div class='wrap'><table><tr><th>서명 (숫자는 #)</th></tr>{items}</table></div>")
 
+    try:
+        from .memwatch import items_html, repro_html
+        memsec = repro_html(run.get("memory_repro")) + items_html(run)
+    except Exception as e:  # noqa: BLE001
+        memsec = f"<p class='sub'>메모리 표 생성 실패: {_e(e)}</p>"
     doc = f"""<!doctype html><html lang="ko"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>{PAGE_TITLE}</title>
 {'<meta http-equiv="refresh" content="30">' if v == "진행 중" else ""}
@@ -163,6 +170,7 @@ def write_report(run, outdir: Path, hist):
 {f'<div class="notes">{notes}</div>' if notes else ''}
 <h2>흐름별 결과</h2>
 <div class="wrap"><table><tr><th>TC</th><th>흐름</th><th>판정</th><th>시간</th></tr>{"".join(rows)}</table></div>
+{memsec}
 {newsec}
 <h2>최근 실행 이력</h2>
 <div class="wrap"><table><tr><th>시작</th><th>판정</th><th>PalletizOS / Platform</th><th>흐름 ({" ".join(tcs)})</th></tr>{"".join(hrows)}</table></div>

@@ -25,7 +25,7 @@ user32, kernel32 = ctypes.windll.user32, ctypes.windll.kernel32
 # 분류: (키, 화면 이름, 성격). 성격 = 앱(제품 쪽) / 외부 / 자동화
 CATS = {
     "app_crash": ("앱 비정상 종료(크래시)", "앱"),
-    "app_memory": ("앱 메모리 과다·증가", "앱"),
+    "app_memory": ("앱 메모리 의심 · 재현 필요", "앱"),
     "pc_memory": ("PC 메모리 부족 (다른 프로그램)", "외부"),
     "app_hang": ("앱 응답 없음·응답 지연", "앱"),
     "product": ("기대 결과 불일치 (제품 동작)", "앱"),
@@ -173,7 +173,7 @@ def snapshot():
     """시도 시작 때: 빠른 항목만 (약 0.05초)."""
     procs = app_processes()
     if procs and _RUN_BASE.get("pid") != _main_pid(procs):
-        _RUN_BASE.update(pid=_main_pid(procs), ws=_ws(procs), at=time.strftime("%H:%M"))
+        _RUN_BASE.update(pid=_main_pid(procs), pb=_pb(procs), at=time.strftime("%H:%M"))
     return {"at": time.time(), "procs": procs, "mem": system_memory(), "session": session_state(),
             "ctrl": dict(_last_ctrl)}
 
@@ -247,6 +247,11 @@ def _ws(procs):
     return sum(p["ws_mb"] for p in procs)
 
 
+def _pb(procs):
+    """전용 커밋(Private Bytes) 합 — 누수 판정 기준 (디스크로 밀려나도 줄지 않음)."""
+    return sum(p["private_mb"] for p in procs)
+
+
 def analyze(pre, msg, trace="", log_lines=None, status="fail", app_closed_hint=False):
     """실패 직후 호출. 반환: {category, label, nature, cause, evidence[], before, after, log, events, dumps}."""
     t0 = pre.get("at", time.time() - 60)
@@ -286,14 +291,18 @@ def analyze(pre, msg, trace="", log_lines=None, status="fail", app_closed_hint=F
     #    'PC 메모리 문제인지 앱 메모리 문제인지?' — 예전엔 PC 사용률만 높아도 '앱 요인'으로 표시했음)
     m0, m1 = pre.get("mem", {}), after["mem"]
     ws0, ws1 = _ws(b_procs), _ws(a_procs)
-    app_side = []
-    if a_procs and ws1 >= 3000:
-        app_side.append(f"앱 메모리 사용량 큼: 합계 {ws1}MB (기준 3000MB)")
-    if a_procs and ws0 and ws1 - ws0 >= 600:
-        app_side.append(f"이 시도 동안 앱 메모리가 {ws1 - ws0}MB 늘어남 ({ws0} → {ws1}MB)")
-    if a_procs and _RUN_BASE.get("pid") == _main_pid(a_procs) and ws1 - _RUN_BASE.get("ws", ws1) >= 1500:
-        app_side.append(f"이 실행 동안 앱 메모리가 계속 늘어남: {_RUN_BASE['at']} {_RUN_BASE['ws']}MB → 지금 {ws1}MB "
-                        f"(+{ws1 - _RUN_BASE['ws']}MB, 앱 재시작 없이) — 누수 의심")
+    pb0, pb1 = _pb(b_procs), _pb(a_procs)
+    from .memwatch import thresholds
+    th, th_status, _ = thresholds()
+    app_side = []  # 누수 판정은 전용 커밋 기준 (작업 집합은 PC 가 부족하면 줄어들어 누수를 가림)
+    if a_procs and pb1 >= th["app_total_mb"]:
+        app_side.append(f"앱 메모리(전용 커밋) 합계 {pb1:,}MB (기준 {th['app_total_mb']:,}MB · {th_status})")
+    if a_procs and pb0 and _main_pid(b_procs) == _main_pid(a_procs) and pb1 - pb0 >= th["item_jump_mb"]:
+        app_side.append(f"이 시도 동안 앱 메모리(전용 커밋)가 {pb1 - pb0:,}MB 늘어남 ({pb0:,} → {pb1:,}MB · 기준 "
+                        f"{th['item_jump_mb']:,}MB · {th_status}) — 한 항목 급증")
+    if a_procs and _RUN_BASE.get("pid") == _main_pid(a_procs) and pb1 - _RUN_BASE.get("pb", pb1) >= th["run_growth_mb"]:
+        app_side.append(f"이 실행 동안 앱 메모리(전용 커밋)가 계속 늘어남: {_RUN_BASE['at']} {_RUN_BASE['pb']:,}MB → 지금 {pb1:,}MB "
+                        f"(+{pb1 - _RUN_BASE['pb']:,}MB, 앱 재시작 없이 · 기준 {th['run_growth_mb']:,}MB) — 누적 증가")
     for t in app_side:
         ev.append(("app_memory", t))
     pc_low = m1.get("load_pct", 0) >= 90 or m1.get("avail_mb", 99999) < 800 or m1.get("commit_avail_mb", 99999) < 500
@@ -357,7 +366,8 @@ def analyze(pre, msg, trace="", log_lines=None, status="fail", app_closed_hint=F
     label, nature = CATS[primary]
     cause = {
         "app_crash": "앱(또는 앱의 화면 프로세스)이 비정상 종료돼 동작이 끊김 — 제품 결함 가능성 높음. 크래시 덤프·이벤트 로그 확인",
-        "app_memory": "앱 자체 메모리가 크거나 계속 늘어남 — 앱 메모리 누수 의심(제품 쪽). 같은 순서로 다시 돌려 앱 메모리가 또 늘면 결함으로 등록",
+        "app_memory": "앱 메모리 의심 · 재현 필요 — 앱 자체 메모리가 크거나 늘어남(제품 쪽 누수 가능). 아직 확정 아님: "
+                      "아래 재현 명령으로 앱 재시작 직후 같은 절차를 돌려 '앱 메모리 확정'이 나오면 개발팀에 전달",
         "pc_memory": "앱 메모리는 정상인데 다른 프로그램이 PC 메모리를 거의 다 씀 — 외부 요인. 근거의 프로그램(브라우저 탭 등)을 닫고 재실행",
         "app_closed": "앱이 크래시 기록 없이 꺼짐 — 사용자가 창을 닫았거나 다른 프로그램이 종료시킨 외부 요인 가능성",
         "controller": "가상 제어기(시뮬레이터) 쪽 문제로 앱이 제어기 응답을 못 받음 — 외부 환경 요인. 제품 결함으로 보기 전에 재실행",
@@ -379,9 +389,9 @@ def analyze(pre, msg, trace="", log_lines=None, status="fail", app_closed_hint=F
             evidence.append({"cat": c, "label": CATS[c][0], "nature": CATS[c][1], "text": t})
     return {"category": primary, "label": label, "nature": nature, "cause": cause, "exception": exc_type,
             "evidence": evidence,
-            "before": {"app_procs": len(b_procs), "app_ws_mb": ws0, "main_pid": _main_pid(b_procs), **{f"sys_{k}": v for k, v in m0.items()},
+            "before": {"app_procs": len(b_procs), "app_ws_mb": ws0, "app_pb_mb": pb0, "main_pid": _main_pid(b_procs), **{f"sys_{k}": v for k, v in m0.items()},
                        **{f"ctrl_{k}": v for k, v in c0.items()}},
-            "after": {"app_procs": len(a_procs), "app_ws_mb": ws1, "main_pid": _main_pid(a_procs), **{f"sys_{k}": v for k, v in m1.items()},
+            "after": {"app_procs": len(a_procs), "app_ws_mb": ws1, "app_pb_mb": pb1, "main_pid": _main_pid(a_procs), **{f"sys_{k}": v for k, v in m1.items()},
                       **{f"ctrl_{k}": v for k, v in c1.items()}, **{f"pc_{k}": v for k, v in s1.items()}},
             "log": log, "events": events, "dumps": dumps}
 

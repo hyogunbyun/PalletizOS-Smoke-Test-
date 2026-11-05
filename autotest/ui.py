@@ -362,9 +362,21 @@ class UI:
     def root(self):
         """PalletizOS 영역 = 'v1.1.0' 버전 텍스트의 부모 그룹. 뒤에 깔린 Platform 화면과 분리한다."""
         # 상위 계정(Internal 등)은 빌드 번호까지 'v2.0.0-25' 로 표시함 (2026-11-02 doosan 로그인 실측) → 둘 다 인정
-        for t in self.win.descendants(control_type="Text"):
-            if re.fullmatch(VER_RE, t.window_text() or ""):
-                return t.parent()
+        for attempt in (1, 2):
+            for t in self.win.descendants(control_type="Text"):
+                if re.fullmatch(VER_RE, t.window_text() or ""):
+                    return t.parent()
+            # 버전 글자는 펼친 왼쪽 메뉴에만 보임 → 메뉴가 접혀 있으면 Home 이 멀쩡해도 여기서 실패해 앱을 강제 재시작했음
+            # (2026-11-05 K01 15:10 스크린샷: Home 정상). 한 번 펼치고 다시 봄
+            if attempt == 1 and not getattr(self, "_in_root_expand", False):
+                self._in_root_expand = True
+                try:
+                    if not self.expand_nav():
+                        break
+                except Exception:  # noqa: BLE001
+                    break
+                finally:
+                    self._in_root_expand = False
         raise EnvError("PalletizOS 화면이 열려 있지 않음")
 
     def version(self):
