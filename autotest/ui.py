@@ -14,6 +14,9 @@ ctypes.windll.shcore.SetProcessDpiAwareness(2)
 import yaml  # noqa: E402
 from pywinauto import Desktop, mouse  # noqa: E402
 
+from . import uiafast  # noqa: E402  트리 조회 가속 (속성 한 번에 받기) — 2026-11-04 속도 2배 요청
+uiafast.install()
+
 ROOT = Path(__file__).resolve().parent.parent
 EL = yaml.safe_load((ROOT / "elements.yaml").read_text(encoding="utf-8"))
 P = EL["palletizos"]
@@ -67,7 +70,9 @@ def check_stop():
 def pause(sec):
     """고정 대기. elements.yaml의 speed 배수만큼 줄인다 (2.0 → 절반). 대기 앞뒤로 종료 요청 확인."""
     check_stop()
+    uiafast.invalidate()  # 기다리는 동안 화면이 바뀜 → 이름·위치 캐시는 다시 읽게
     time.sleep(sec / _speed[0])
+    uiafast.invalidate()
     check_stop()
 
 
@@ -262,6 +267,11 @@ class UI:
             raise AssertionError(f"요소가 가려져 있어 누르지 않음: {elem.window_text()!r} (맨 위: {top!r})")
         if self.on_click:
             self.on_click(label or elem.window_text() or elem.element_info.control_type)
+        # 0차: 요소 자신의 기본 동작이 '누르기·선택'이면 그걸로 — Invoke·Toggle 은 앱 창을 맨 앞으로 끌어와 사용자 포커스를 뺏음
+        #      (2026-11-04 실측: Invoke·Toggle·SetFocus 매번 즉시 포커스 뺏김, DoDefaultAction 은 0회 · 같은 동작)
+        if _expand_press(elem) or _legacy_press(elem):
+            pause(settle)
+            return
         # 1차: 요소→부모 순으로 명시적 동작(Invoke·Toggle·Select)을 찾는다.
         #      표 셀처럼 기본 동작('두 번 클릭')만 있는 요소는 그걸 실행해도 선택되지 않음 → 행(부모)의 Invoke가 맞다 (실측)
         # 2차: 어디에도 없으면 기본 동작(DoDefaultAction)
@@ -285,6 +295,7 @@ class UI:
             # → 잠깐 쉬고 몇 번 더, 끝내 안 되면 실행기 오류가 아니라 환경 오류로 올려 호출부가 다시 찾게 함
             for i in range(3):
                 try:
+                    uiafast.invalidate()
                     edit.iface_value.SetValue(text)
                     break
                 except Exception as e:  # noqa: BLE001  COMError · NoPatternInterfaceError
@@ -308,6 +319,27 @@ class UI:
             from pywinauto import keyboard
             keyboard.send_keys("{ESC}")
         pause(1.0)
+        if self.mode == "background" and self._collapse_open():
+            pause(1.0)
+
+    def _collapse_open(self):
+        """펼쳐진 드롭다운·⋮ 메뉴를 Collapse 로 닫음. 닫은 개수.
+        2026-11-05 09:36 R04: Expand 로 연 메뉴는 앱 창이 앞에 없으면 창에 보낸 ESC 가 안 먹음(포커스를 사용자 창으로 되돌린 뒤)
+        → 메뉴가 화면을 가려 Home 으로 못 돌아오고, 원상복구 실패로 실행기가 앱을 강제 종료·재시작함."""
+        from pywinauto.uia_defines import get_elem_interface
+        n = 0
+        for e in self._all(None, "Button") + self._all(None, "ComboBox"):  # 메뉴가 맨 위 층이라 top_all 로는 아래 ⋮ 버튼이 안 보임
+            try:
+                ec = get_elem_interface(e.element_info.element, "ExpandCollapse")
+                if ec.CurrentExpandCollapseState == 1:  # 펼침
+                    uiafast.invalidate()
+                    ec.Collapse()
+                    n += 1
+            except Exception:  # noqa: BLE001  패턴 없음·COM 오류
+                pass
+        if n:
+            uiafast.invalidate()
+        return n
 
     def click_xy(self, x, y, settle=1.0):
         self.check_interference()
@@ -423,8 +455,28 @@ class UI:
     def rail(self):
         """접힌 아이콘 메뉴 버튼들 (위에서 아래 순, Recovery·Enable 아이콘 포함)."""
         wr = self.wrapper().rectangle()
-        return sorted([b for b in self.top_all("Button") if b.rectangle().right < wr.left + 110
-                       and b.rectangle().width() > 0], key=lambda b: b.rectangle().top)
+        r = sorted([b for b in self.top_all("Button") if b.rectangle().right < wr.left + 110
+                    and b.rectangle().width() > 0], key=lambda b: b.rectangle().top)
+        # 2.0.0-28 부터 접힌 메뉴 맨 위에 '→ 메뉴 펼치기' 버튼이 생김(계정 아이콘 'A' 위) → 하나씩 밀려
+        # Settings 를 누르면 Log 가 열림 (2026-11-05 09:43·09:47·09:50 doosan 로그인 실패 3회) → 계정 아이콘부터
+        acct = next((i for i, b in enumerate(r) if re.fullmatch(r"[A-Za-z](?: \S.*)?", b.window_text() or "")), None)
+        return r[acct:] if acct else r
+
+    def expand_nav(self):
+        """접힌 왼쪽 메뉴면 맨 위 '→' 버튼을 눌러 펼친다 (펼치면 메뉴에 이름이 보여 이름으로 찾음). 펼쳤으면 True.
+        2026-11-05 사용자 요청: 접힌 메뉴(아이콘만) 때문에 계정 전환·Home 복귀·역할 확인이 계속 실패 → 항상 펼친 상태로 진행."""
+        wr = self.wrapper().rectangle()
+        if any(b.window_text() == "Home" and b.rectangle().right < wr.left + 300 for b in self.top_all("Button")):
+            return False  # 이미 펼쳐져 있음
+        r = sorted([b for b in self.top_all("Button") if b.rectangle().right < wr.left + 110
+                    and b.rectangle().width() > 0], key=lambda b: b.rectangle().top)
+        if not r or re.fullmatch(r"[A-Za-z](?: \S.*)?", r[0].window_text() or ""):
+            return False  # 접힌 메뉴가 아니거나, 맨 위가 계정 아이콘(펼치기 버튼이 없는 화면)
+        self.click(r[0], settle=1.5, label="메뉴 펼치기 →")
+        ok = self.wait_for(lambda: self.top_find("Home") is not None, 3)
+        if ok:
+            self.remember_nav()
+        return ok
 
     def has_menu(self, name):
         """이 버전의 좌측 메뉴에 name(또는 별칭)이 있는지. 메뉴 순서를 아직 못 읽었으면 None."""
@@ -439,6 +491,8 @@ class UI:
                 name = c
                 break
         b = self.top_find(name)
+        if b is None and self.expand_nav():
+            b = self.top_find(name)
         if b is not None and b.rectangle().right < self.wrapper().rectangle().left + 300:
             self.click(b, settle=settle, label=f"메뉴 {name}")
             return
@@ -446,6 +500,8 @@ class UI:
         if not order or name not in order:
             raise AssertionError(f"메뉴 '{name}'을(를) 찾을 수 없음 (메뉴 순서 미확인)")
         r = self.rail()
+        if len(r) > len(order) + 2:  # 계정 아이콘 이름을 못 읽어 위쪽 버튼이 남음 → 아래(Recovery·Enable 2개) 기준으로 맞춤
+            r = r[len(r) - len(order) - 2:]
         idx = order.index(name)
         if idx >= len(r):
             raise AssertionError(f"접힌 메뉴에서 '{name}' 아이콘을 찾지 못함")
@@ -509,11 +565,17 @@ class UI:
                 break
 
     # ---------- 계정 ----------
-    def current_role(self):
+    def current_role(self, expand=True):
         for b in self.top_all("Button"):
             m = re.fullmatch(r"([A-Z]) (\w+)", b.window_text() or "")
             if m and b.rectangle().right < self.wrapper().rectangle().left + 300:
                 return m.group(2)
+        if expand:
+            try:
+                if self.expand_nav():  # 접힌 메뉴는 계정 아이콘에 'A' 만 보임 → 펼친 뒤 다시 읽음
+                    return self.current_role(expand=False)
+            except Exception:  # noqa: BLE001
+                pass
         return None
 
     def wait_role(self, timeout=20):
@@ -862,9 +924,57 @@ def _layer_ok(elem, win=None, lp=None):
     return True
 
 
+# 포커스를 뺏지 않는 기본 동작 이름 (한국어·영어 Windows). '두 번 클릭' 같은 표 셀 동작은 선택이 안 돼 제외 → 기존 순서로
+LEGACY_OK = {"누르기", "선택", "선택 안 함", "선택 취소", "확인", "열기", "펼치기", "축소", "점프",
+             "press", "click", "select", "unselect", "check", "uncheck", "toggle", "open", "expand", "collapse", "jump"}
+
+
+def _legacy_press(elem):
+    """요소 자신의 기본 동작(LegacyIAccessible.DoDefaultAction)이 누르기·선택 류일 때만 실행. 실행했으면 True."""
+    from pywinauto.uia_defines import get_elem_interface
+    uiafast.invalidate()
+    try:
+        acc = get_elem_interface(elem.element_info.element, "LegacyIAccessible")
+        if (acc.CurrentDefaultAction or "").strip().lower() not in LEGACY_OK:
+            return False
+        acc.DoDefaultAction()
+        return True
+    except Exception:  # noqa: BLE001  패턴 없음·COM 오류 → 기존 방식
+        return False
+
+
+def _expand_press(elem):
+    """펼치기만 되는 버튼(3D 확대 드롭다운·레시피 ⋮)은 Expand/Collapse 로. 실행했으면 True.
+    2026-11-05 실측: 이 버튼들은 Invoke 가 없고 기본 동작 '누르기'(DoDefaultAction)는 아무 일도 안 함 → H06·R04 가
+    10-19 처음부터 매번 '선택지/메뉴 없음'으로 실패. Expand 는 목록·메뉴가 바로 열림 (포커스는 한 번 가져감 → focusguard 가 되돌림)."""
+    from pywinauto.uia_defines import get_elem_interface
+    el = elem.element_info.element
+    try:
+        get_elem_interface(el, "Invoke")
+        return False  # Invoke 가 있으면 일반 버튼 → 기존 방식
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        ec = get_elem_interface(el, "ExpandCollapse")
+    except Exception:  # noqa: BLE001
+        return False
+    uiafast.invalidate()
+    try:
+        if ec.CurrentExpandCollapseState == 0:  # 접힘
+            ec.Expand()
+        else:
+            ec.Collapse()
+        return True
+    except Exception:  # noqa: BLE001  COM 오류 → 기존 방식
+        return False
+    finally:
+        uiafast.invalidate()
+
+
 def _uia_press(elem, legacy=False):
     """요소 하나에 UIA '누름' 시도. legacy=False면 명시적 패턴만, True면 기본 동작(DoDefaultAction)만. 성공하면 True."""
     from pywinauto.uia_defines import get_elem_interface
+    uiafast.invalidate()
     el = elem.element_info.element
     ct = elem.element_info.control_type
     if legacy:

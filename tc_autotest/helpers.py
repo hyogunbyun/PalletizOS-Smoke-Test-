@@ -3,6 +3,7 @@
 사용자 허락 범위(2026-11-02, TC 자동평가 툴·가상 제어기 한정): 상위 계정 사용, 저장 후 원래 값으로 되돌림,
 숫자 입력·드롭다운은 앱을 잠깐 앞으로 가져와 실제 키보드·마우스로.
 """
+import re
 import time
 
 from autotest import secret
@@ -49,9 +50,22 @@ def go_home(ctx):
     w = ui.wrapper()
     if "Change Account" in ui.top_names():  # 계정 메뉴가 열려 있으면 닫기
         ui.esc()
+    try:
+        if ui.expand_nav() and ui.top_find("Home") is not None:  # 접힌 메뉴 → 펼쳐서 이름으로 Home
+            ui.click(ui.top_find("Home"), settle=2.5, label="Home")
+            discard_if_asked(ctx)
+            if _on_home(ui):
+                return
+    except Exception:  # noqa: BLE001  펼치기 실패 → 아래 아이콘 방식
+        pass
     left = w.rectangle().left
     rail = sorted([b for b in ui.top_all("Button") if not b.window_text() and b.rectangle().left - left < 40
                    and b.rectangle().width() > 0 and b.rectangle().top < w.rectangle().top + 650], key=lambda b: b.rectangle().top)
+    # 2.0.0-28: 계정 아이콘 위에 이름 없는 '→ 메뉴 펼치기' 버튼이 생겨 rail[0] 이 Home 이 아니게 됨 → 계정 아이콘 아래만
+    acct = next((b for b in ui.top_all("Button") if b.rectangle().left - left < 40
+                 and re.fullmatch(r"[A-Za-z](?: \S.*)?", b.window_text() or "")), None)
+    if acct is not None:
+        rail = [b for b in rail if b.rectangle().top > acct.rectangle().bottom - 5]
     if rail:
         ui.click(rail[0], settle=2.5, label="Home")
         discard_if_asked(ctx)

@@ -76,6 +76,20 @@ head.pack(side="left", fill="x", expand=True)
 title = tk.Label(head, text="PalletizOS 스모크", font=(FONT, 10), fg=SUB, bg=BG, anchor="w")
 title.pack(fill="x")
 stop_btn = None
+_moved = {"t": 0.0}  # 표시창 위치가 마지막으로 바뀐 시각 (place)
+MOVE_GUARD = 1.5  # 옮겨 온 직후 이 시간 안의 ■ 누름은 무시
+
+
+def _fg_title():
+    try:
+        h = user32.GetForegroundWindow()
+        buf = ctypes.create_unicode_buffer(256)
+        user32.GetWindowTextW(h, buf, 256)
+        return buf.value[:60]
+    except Exception:  # noqa: BLE001
+        return ""
+
+
 if MODE != "mouse":  # 백그라운드 방식은 자동화가 마우스를 안 쓰므로 이 창을 눌러도 됨
     _arm = {"t": 0}
 
@@ -89,7 +103,12 @@ if MODE != "mouse":  # 백그라운드 방식은 자동화가 마우스를 안 �
         # 종료한 버전은 감시기가 다시 자동 실행하지 않는다 (run_smoke 가 results/user_stop.json 기록)
         if stop_btn["text"] == "종료 중":
             return
-        evlog(f"■ 종료 누름 (마우스 {_cursor()}) → stop.flag · 이 버전은 자동으로 다시 시작하지 않음")
+        fg = _fg_title()
+        if time.time() - _moved["t"] < MOVE_GUARD:
+            # 표시창이 방금 커서 밑으로 옮겨 왔음 → 사용자가 원래 누르려던 건 다른 창 (2026-11-05 오입력 방지)
+            evlog(f"■ 종료 누름 무시 — 표시창이 {time.time() - _moved['t']:.1f}초 전에 이 자리로 옮겨 옴 (마우스 {_cursor()}, 앞 창 '{fg}')")
+            return
+        evlog(f"■ 종료 누름 (마우스 {_cursor()}, 앞 창 '{fg}') → stop.flag · 이 버전은 자동으로 다시 시작하지 않음")
         STOP.write_text("stop", encoding="utf-8")
         stop_btn.config(text="종료 중", state="disabled", bg="#6b7280")
 
@@ -234,6 +253,12 @@ def place():
     root.update_idletasks()
     h = root.winfo_reqheight()
     default = (-W - int(24 * scale), int(70 * scale))
+    if app_rect(APP_TITLE) is None:
+        # 앱 창이 아직 없을 때(앱 시작·재시작 중)는 주 모니터 오른쪽 '아래'. 예전 기본값인 오른쪽 위는 사용자 창의 메뉴·닫기 버튼 자리라
+        # 맨 위에 떠 있는 표시창의 ■ 종료가 대신 눌림 — 2026-11-05 09:28·09:39·09:40 세 번 모두 그 자리 (마우스 1827~1844, 121~126),
+        # 모두 앱이 아직 안 떠 있던 때. 앱 창이 뜨면 저장한 위치(앱 기준)로 옮겨 감
+        wa = _work_area(right - 40, 40)
+        default = (wa.right - W - int(24 * scale) - right, wa.bottom - h - int(24 * scale) - topy)
     # 저장한 위치는 앱 창 기준이므로 앱 창이 있을 때만 쓴다. 앱이 아직 없을 때(시뮬레이터·앱 시작 중) 저장 위치를 주 모니터에
     # 적용하면 화면 밖으로 나가 표시창이 '사라짐' (2026-10-22 실측: 4K 모니터 기준 dy=1077 → 1080 주 모니터 아래로 벗어남)
     dx, dy = (_pos["off"] if _pos["off"] and app_rect(APP_TITLE) is not None else default)
@@ -243,6 +268,8 @@ def place():
     wa = _app_work_area() or _work_area(right - 40, topy + 40)
     x = max(wa.left, min(x, wa.right - W))
     y = max(wa.top, min(y, wa.bottom - h))
+    if (root.winfo_x(), root.winfo_y()) != (x, y):
+        _moved["t"] = time.time()
     root.geometry(f"{W}x{h}+{x}+{y}")
 
 

@@ -93,6 +93,8 @@ def render_widget(hwnd):
 
 def post_key(hwnd, vk):
     """포커스 없이 키 한 번 (WM_KEYDOWN/UP을 앱 창에 직접 보냄)."""
+    from .uiafast import invalidate
+    invalidate()
     target = render_widget(hwnd)
     scan = user32.MapVirtualKeyW(vk, 0)
     user32.PostMessageW(target, 0x0100, vk, 1 | (scan << 16))

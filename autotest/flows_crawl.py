@@ -16,6 +16,8 @@
 import re
 import time
 
+from comtypes import COMError
+
 from . import env
 from .flows import SHORT, NotApplicable, check, flow
 from .ui import EL, P
@@ -177,16 +179,22 @@ class Crawler:
             if _denied(name):
                 self.rows.append((where, _label(key), "건너뜀 (되돌릴 수 없는 버튼)"))
                 continue
-            if _sim(ui.top_names(), base) < 0.7:  # 앞 클릭 때문에 화면이 바뀌어 있으면 다시 열기
-                self.open(path)
-            e = _find(ui, key)
-            if e is None:
-                self.rows.append((where, _label(key), "다시 찾지 못함 (화면 변화)"))
-                continue
-            if not e.is_enabled():
-                self.rows.append((where, _label(key), "비활성 (누르지 않음)"))
-                continue
-            self.press(where, path, key, e, base, queue)
+            try:
+                if _sim(ui.top_names(), base) < 0.7:  # 앞 클릭 때문에 화면이 바뀌어 있으면 다시 열기
+                    self.open(path)
+                e = _find(ui, key)
+                if e is None:
+                    self.rows.append((where, _label(key), "다시 찾지 못함 (화면 변화)"))
+                    continue
+                if not e.is_enabled():
+                    self.rows.append((where, _label(key), "비활성 (누르지 않음)"))
+                    continue
+                self.press(where, path, key, e, base, queue)
+            except COMError as ex:
+                # 화면이 다시 그려지는 순간 UIA 호출 1번이 앱에 안 닿음(-2147220991) — 예전엔 항목 전체가 실패하고 처음부터 다시 돎
+                # (2026-11-05 K01·K07 시도마다 2~6분 버림) → 이 버튼만 건너뛰고 계속
+                self.rows.append((where, _label(key), f"건너뜀 (UIA 통신 일시 실패 {ex.args[0] if ex.args else ''})"))
+                time.sleep(1.0)
 
     def press(self, where, path, key, e, base, queue):
         ui = self.ui
@@ -258,7 +266,7 @@ class Crawler:
             path = queue.pop(0)
             try:
                 self.crawl_page(path, queue)
-            except (AssertionError, KeyError) as ex:
+            except (AssertionError, KeyError, COMError) as ex:
                 if "앱이 꺼짐" in str(ex):
                     raise
                 self.rows.append((" > ".join([self.menu] + [_label(k) for k in path]), "-", f"점검 중단: {ex}"))

@@ -569,8 +569,14 @@ def main():
                         log("Admin 비밀번호를 Windows 자격 증명에 저장함 (다음부터 묻지 않음)")
                 except EnvError as e:
                     admin_err = str(e)
-                    if not typed and "로그인 실패" in admin_err:
-                        admin_err += " — 저장된 비밀번호가 틀림: python -m autotest.secret set 으로 다시 저장"
+                    # '비밀번호 틀림'은 비밀번호를 넣고도 못 들어갔을 때만 (09:43 등: 메뉴 이동 실패를 비밀번호 탓으로 안내함)
+                    if not typed and "계정·비밀번호 확인" in admin_err:
+                        admin_err += " — 저장된 비밀번호가 틀렸을 수 있음: python -m autotest.secret set 으로 다시 저장"
+                    try:  # 실패한 자리(Log·Settings 등 접힌 메뉴 화면)에 남으면 다음 단계가 'PalletizOS 화면이 열려 있지 않음'으로 멈춤
+                        from tc_autotest.helpers import go_home
+                        go_home(ctx)
+                    except Exception as e2:  # noqa: BLE001
+                        log(f"  계정 전환 실패 뒤 Home 복귀 실패: {e2}")
             pw = None
         if not ctx.admin_ok and any(f["admin"] for f in flows):
             admin_err = admin_err or "Admin 비밀번호를 입력하지 않음"

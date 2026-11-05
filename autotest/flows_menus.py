@@ -405,9 +405,14 @@ def s01_general(ctx):
     ver = "".join(ts[i + 1:i + 3]).replace(" ", "")
     want = ctx.info.get("palletizos_version")
     ctx.step(f"Solution Version {ver} ↔ Home 표시 {want}")
-    check(re.fullmatch(r"v\d+\.\d+\.\d+", ver or ""), f"Solution Version 표시 이상: {ver!r}")
+    # 2026-11-05: 빌드 번호 표시 계정(doosan 등)은 'v2.0.0-28' 처럼 보임 (ui.version 주석 참고) → 빌드 번호 허용, 앞부분은 Home, 빌드는 설치 빌드와 비교
+    check(re.fullmatch(r"v\d+\.\d+\.\d+(-\d+)?", ver or ""), f"Solution Version 표시 이상: {ver!r}")
+    base, _, build = ver.partition("-")
     if want:
-        check(ver == want, f"Solution Version {ver} ≠ Home 표시 {want}")
+        check(base == want.partition("-")[0], f"Solution Version {ver} ≠ Home 표시 {want}")
+    got = ctx.info.get("palletizos_build")
+    if build and got:
+        check(ver[1:] == got, f"Solution Version {ver} ≠ 설치 빌드 {got}")
     check(ts.count("Virtual") >= 2, "Controller/Robot Serial이 'Virtual'로 표시되지 않음 (가상 제어기)")
     check(ui.top_find("English") is not None, "Language가 English가 아님")
     check(not ui.top_find("Save").is_enabled(), "아무것도 바꾸지 않았는데 Save가 활성")

@@ -156,7 +156,39 @@ def launch_app():
                      creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP)
 
 
+def _proc_running(exe):
+    """프로세스 목록 직접 조회 (Toolhelp) — tasklist 실행은 한 번에 약 0.4초라 클릭마다 부르면 느림 (2026-11-04 측정 12초/102초)."""
+    import ctypes
+    from ctypes import wintypes
+
+    class PE(ctypes.Structure):
+        _fields_ = [("dwSize", wintypes.DWORD), ("cntUsage", wintypes.DWORD), ("th32ProcessID", wintypes.DWORD),
+                    ("th32DefaultHeapID", ctypes.c_void_p), ("th32ModuleID", wintypes.DWORD), ("cntThreads", wintypes.DWORD),
+                    ("th32ParentProcessID", wintypes.DWORD), ("pcPriClassBase", ctypes.c_long), ("dwFlags", wintypes.DWORD),
+                    ("szExeFile", ctypes.c_wchar * 260)]
+    k = ctypes.windll.kernel32
+    k.CreateToolhelp32Snapshot.restype = wintypes.HANDLE
+    snap = k.CreateToolhelp32Snapshot(2, 0)  # TH32CS_SNAPPROCESS
+    if snap in (None, wintypes.HANDLE(-1).value):
+        raise OSError("CreateToolhelp32Snapshot 실패")
+    try:
+        pe = PE()
+        pe.dwSize = ctypes.sizeof(PE)
+        ok = k.Process32FirstW(snap, ctypes.byref(pe))
+        while ok:
+            if pe.szExeFile.lower() == exe.lower():
+                return True
+            ok = k.Process32NextW(snap, ctypes.byref(pe))
+        return False
+    finally:
+        k.CloseHandle(snap)
+
+
 def app_running():
+    try:
+        return _proc_running("Dr.Dart-Platform.exe")
+    except Exception:  # noqa: BLE001  조회 실패 시 예전 방식
+        pass
     # 바이트로 받음: tasklist는 한국어 콘솔 인코딩(cp949)으로 출력 → UTF-8 모드(-X utf8)에서 text=True면 해석 실패로 None (2026-10-22)
     r = subprocess.run(["tasklist", "/FI", "IMAGENAME eq Dr.Dart-Platform.exe", "/NH"], capture_output=True, creationflags=_NO_WINDOW)
     return b"Dr.Dart-Platform.exe" in (r.stdout or b"")
