@@ -25,7 +25,8 @@ user32, kernel32 = ctypes.windll.user32, ctypes.windll.kernel32
 # 분류: (키, 화면 이름, 성격). 성격 = 앱(제품 쪽) / 외부 / 자동화
 CATS = {
     "app_crash": ("앱 비정상 종료(크래시)", "앱"),
-    "app_memory": ("메모리 부족 의심", "앱"),
+    "app_memory": ("앱 메모리 과다·증가", "앱"),
+    "pc_memory": ("PC 메모리 부족 (다른 프로그램)", "외부"),
     "app_hang": ("앱 응답 없음·응답 지연", "앱"),
     "product": ("기대 결과 불일치 (제품 동작)", "앱"),
     "ui_changed": ("화면 요소를 못 찾음 (화면 변경·로딩 지연)", "앱"),
@@ -143,10 +144,39 @@ def remember_controller():
     _last_ctrl.update(controller_state())
 
 
+def top_memory(n=5, skip=()):
+    """PC 전체에서 메모리를 많이 쓰는 프로그램 n개 [(이름, MB, 개수)] (프로세스 이름별 작업 집합 합계, 약 0.1초)."""
+    tot = {}
+    for pid in win32process.EnumProcesses():
+        try:
+            h = win32api.OpenProcess(0x1000, False, pid)
+        except Exception:  # noqa: BLE001
+            continue
+        try:
+            name = Path(_image(h)).name or "?"
+            mb = win32process.GetProcessMemoryInfo(h)["WorkingSetSize"] / 2**20
+            t = tot.setdefault(name, [0.0, 0])
+            t[0] += mb
+            t[1] += 1
+        except Exception:  # noqa: BLE001
+            pass
+        finally:
+            win32api.CloseHandle(h)
+    rows = sorted(((k, int(v[0]), v[1]) for k, v in tot.items() if k.lower() not in skip), key=lambda r: -r[1])
+    return rows[:n]
+
+
+_RUN_BASE = {}  # 이 실행에서 처음 잰 앱 메모리 {pid, ws} — 실행 내내 쌓이는 누수 판단용 (앱이 재시작되면 다시 잼)
+
+
 def snapshot():
     """시도 시작 때: 빠른 항목만 (약 0.05초)."""
-    return {"at": time.time(), "procs": app_processes(), "mem": system_memory(), "session": session_state(),
+    procs = app_processes()
+    if procs and _RUN_BASE.get("pid") != _main_pid(procs):
+        _RUN_BASE.update(pid=_main_pid(procs), ws=_ws(procs), at=time.strftime("%H:%M"))
+    return {"at": time.time(), "procs": procs, "mem": system_memory(), "session": session_state(),
             "ctrl": dict(_last_ctrl)}
+
 
 
 def windows_events(since):
@@ -248,19 +278,35 @@ def analyze(pre, msg, trace="", log_lines=None, status="fail", app_closed_hint=F
     for d in dumps:
         ev.append(("app_crash", f"새 크래시 덤프: {d}"))
     for e in events:
-        cat = {1000: "app_crash", 1001: "app_crash", 1002: "app_hang", 2004: "app_memory"}.get(e["id"], "app_crash")
+        cat = {1000: "app_crash", 1001: "app_crash", 1002: "app_hang",
+               2004: "app_memory" if "dart" in e["msg"].lower() else "pc_memory"}.get(e["id"], "app_crash")  # 2004 본문 = 많이 쓴 프로세스
         ev.append((cat, f"Windows 이벤트 {e['id']} ({e['time']}): {e['msg'][:180]}"))
 
-    # 2. 메모리
+    # 2. 메모리 — 앱 쪽(앱 자체가 크거나 계속 늘어남)과 PC 쪽(다른 프로그램이 다 씀)을 나눔 (2026-11-05 사용자 질문:
+    #    'PC 메모리 문제인지 앱 메모리 문제인지?' — 예전엔 PC 사용률만 높아도 '앱 요인'으로 표시했음)
     m0, m1 = pre.get("mem", {}), after["mem"]
-    if m1.get("load_pct", 0) >= 90 or m1.get("avail_mb", 99999) < 800 or m1.get("commit_avail_mb", 99999) < 500:
-        ev.append(("app_memory", f"PC 메모리 부족: 사용률 {m1['load_pct']}% · 남은 물리 메모리 {m1['avail_mb']}MB · "
-                                 f"남은 커밋 {m1['commit_avail_mb']}MB"))
     ws0, ws1 = _ws(b_procs), _ws(a_procs)
-    if a_procs and ws1 >= 2500:
-        ev.append(("app_memory", f"앱 메모리 사용량 큼: 합계 {ws1}MB (시작 때 {ws0}MB)"))
-    elif a_procs and ws0 and ws1 - ws0 >= 600:
-        ev.append(("app_memory", f"이 시도 동안 앱 메모리가 {ws1 - ws0}MB 늘어남 ({ws0} → {ws1}MB)"))
+    app_side = []
+    if a_procs and ws1 >= 3000:
+        app_side.append(f"앱 메모리 사용량 큼: 합계 {ws1}MB (기준 3000MB)")
+    if a_procs and ws0 and ws1 - ws0 >= 600:
+        app_side.append(f"이 시도 동안 앱 메모리가 {ws1 - ws0}MB 늘어남 ({ws0} → {ws1}MB)")
+    if a_procs and _RUN_BASE.get("pid") == _main_pid(a_procs) and ws1 - _RUN_BASE.get("ws", ws1) >= 1500:
+        app_side.append(f"이 실행 동안 앱 메모리가 계속 늘어남: {_RUN_BASE['at']} {_RUN_BASE['ws']}MB → 지금 {ws1}MB "
+                        f"(+{ws1 - _RUN_BASE['ws']}MB, 앱 재시작 없이) — 누수 의심")
+    for t in app_side:
+        ev.append(("app_memory", t))
+    pc_low = m1.get("load_pct", 0) >= 90 or m1.get("avail_mb", 99999) < 800 or m1.get("commit_avail_mb", 99999) < 500
+    if pc_low:
+        used = max(1, m1.get("total_mb", 0) - m1.get("avail_mb", 0))
+        share = round(100 * ws1 / used) if a_procs else 0
+        try:
+            top = ", ".join(f"{n.removesuffix('.exe')} {mb:,}MB" for n, mb, _ in top_memory(5, skip={APP_IMAGE}))
+        except Exception:  # noqa: BLE001
+            top = "?"
+        txt = (f"PC 메모리 부족: 사용률 {m1['load_pct']}% · 남은 물리 메모리 {m1['avail_mb']}MB · 남은 커밋 {m1['commit_avail_mb']}MB"
+               f" · 앱은 사용 중 메모리의 {share}%({ws1:,}MB) · 많이 쓰는 다른 프로그램: {top}")
+        ev.append(("app_memory" if app_side else "pc_memory", txt))
 
     # 3. 가상 제어기
     c0, c1 = pre.get("ctrl", {}), after["ctrl"]
@@ -304,14 +350,15 @@ def analyze(pre, msg, trace="", log_lines=None, status="fail", app_closed_hint=F
     elif exc_type and exc_type not in ("AssertionError", "EnvError", "autotest.ui.EnvError"):
         ev.append(("tool", f"자동화 코드 예외 {exc_type}: {msg[:120]}"))
 
-    order = ["app_crash", "app_memory", "app_closed", "controller", "pc_lock", "user", "app_hang", "uia",
+    order = ["app_crash", "app_memory", "app_closed", "pc_memory", "controller", "pc_lock", "user", "app_hang", "uia",
              "ui_changed", "tool", "product"]
     cats = [c for c, _ in ev]
     primary = next((c for c in order if c in cats), "product" if status == "fail" else "tool")
     label, nature = CATS[primary]
     cause = {
         "app_crash": "앱(또는 앱의 화면 프로세스)이 비정상 종료돼 동작이 끊김 — 제품 결함 가능성 높음. 크래시 덤프·이벤트 로그 확인",
-        "app_memory": "메모리가 부족한 상태에서 실패 — 앱 메모리 누수 또는 PC 자원 부족. 같은 항목을 앱 재시작 직후 다시 실행해 비교",
+        "app_memory": "앱 자체 메모리가 크거나 계속 늘어남 — 앱 메모리 누수 의심(제품 쪽). 같은 순서로 다시 돌려 앱 메모리가 또 늘면 결함으로 등록",
+        "pc_memory": "앱 메모리는 정상인데 다른 프로그램이 PC 메모리를 거의 다 씀 — 외부 요인. 근거의 프로그램(브라우저 탭 등)을 닫고 재실행",
         "app_closed": "앱이 크래시 기록 없이 꺼짐 — 사용자가 창을 닫았거나 다른 프로그램이 종료시킨 외부 요인 가능성",
         "controller": "가상 제어기(시뮬레이터) 쪽 문제로 앱이 제어기 응답을 못 받음 — 외부 환경 요인. 제품 결함으로 보기 전에 재실행",
         "pc_lock": "PC 가 잠겨 화면 입력이 막힘 — 외부 요인. 잠금 해제 상태에서 재실행",
