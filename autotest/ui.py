@@ -321,6 +321,17 @@ class UI:
         pause(1.0)
         if self.mode == "background" and self._collapse_open():
             pause(1.0)
+        if _LAST_EXPANDED["ec"] is not None and self.top_all("MenuItem"):
+            # 2026-11-05 13:07 R04(doosan): ⋮ 버튼이 '펼침' 상태를 안 알려 위 방법으로도 안 닫힘 → 마지막에 Expand 한 요소를 직접 Collapse
+            try:
+                uiafast.invalidate()
+                _LAST_EXPANDED["ec"].Collapse()
+                uiafast.invalidate()
+                pause(1.0)
+            except Exception:  # noqa: BLE001
+                pass
+        if not self.top_all("MenuItem"):
+            _LAST_EXPANDED["ec"] = None
 
     def _collapse_open(self):
         """펼쳐진 드롭다운·⋮ 메뉴를 Collapse 로 닫음. 닫은 개수.
@@ -584,6 +595,11 @@ class UI:
         self.wait_for(lambda: found.append(self.current_role()) or found[-1] is not None, timeout)
         return found[-1] if found else None
 
+    def acct_button(self, name):
+        """계정 버튼 'D doosan'·'A Admin' (앞 글자는 대문자 아이콘 — 'd doosan' 으로 찾으면 못 찾음, 2026-11-05 13:20)."""
+        want = f"{name[0]} {name}".lower()
+        return next((b for b in self.top_all("Button") if (b.window_text() or "").strip().lower() == want), None)
+
     def login_as(self, role, password=None):
         """좌측 역할 버튼 → Change Account → 역할 선택 → (비밀번호) Confirm."""
         now = self.wait_role()
@@ -591,9 +607,9 @@ class UI:
             return
         if now is None:
             raise EnvError("좌측 계정(역할) 버튼을 찾지 못함 — 화면이 아직 로딩 중이거나 팝업이 가리고 있음")
-        cur = self.top_find(f"{now[0]} {now}")
+        cur = self.acct_button(now)
         self.click(cur, settle=2, label="계정 메뉴")
-        target = self.top_find(f"{role[0]} {role}")
+        target = self.acct_button(role)
         if target is None:
             raise EnvError(f"계정 '{role}'이(가) 목록에 없음")
         self.click(target, settle=2, label=f"계정 {role}")
@@ -943,6 +959,9 @@ def _legacy_press(elem):
         return False
 
 
+_LAST_EXPANDED = {"ec": None}  # 마지막으로 Expand 한 요소의 ExpandCollapse (esc 가 메뉴를 못 닫을 때 직접 Collapse)
+
+
 def _expand_press(elem):
     """펼치기만 되는 버튼(3D 확대 드롭다운·레시피 ⋮)은 Expand/Collapse 로. 실행했으면 True.
     2026-11-05 실측: 이 버튼들은 Invoke 가 없고 기본 동작 '누르기'(DoDefaultAction)는 아무 일도 안 함 → H06·R04 가
@@ -962,6 +981,7 @@ def _expand_press(elem):
     try:
         if ec.CurrentExpandCollapseState == 0:  # 접힘
             ec.Expand()
+            _LAST_EXPANDED["ec"] = ec
         else:
             ec.Collapse()
         return True

@@ -142,8 +142,8 @@ def ensure_role(ctx, role):
     pw = secret.load(ACCOUNT_TARGET.get(role, ""))
     if not pw:
         raise NotApplicable(f"{role} 계정 비밀번호가 Windows 자격 증명에 없음")
-    ui.click(ui.top_find(f"{now[0]} {now}") if now else ui.top_all("Button")[0], settle=2, label="계정 메뉴")
-    tgt = next((b for b in ui.top_all("Button") if (b.window_text() or "").lower() == f"{role[0]} {role}".lower()), None)
+    ui.click(ui.acct_button(now) if now else ui.top_all("Button")[0], settle=2, label="계정 메뉴")
+    tgt = ui.acct_button(role)
     if tgt is None:  # Change Account 목록에 없는 계정(doosan 등) → 로그아웃 후 로그인 화면에서 계정 이름을 직접 입력
         ui.esc()
         if now not in ("Admin", "doosan") and role != "Admin":
@@ -303,8 +303,78 @@ def _keys(s):
     return "".join("{%s}" % c if c in "{}+^%~()" else c for c in s)
 
 
+def _login_by_value(ui, account, pw):
+    """로그인 화면을 UIA 값 입력으로 (앞 창 불필요, 2026-11-05 실측).
+    Account 버튼은 ExpandCollapse 전용 → Expand 하면 그 자리에 입력칸(Edit, 현재 계정 이름)과 화상 키보드가 뜸.
+    입력칸에 SetValue(account) → 목록이 'D doosan' 처럼 걸러짐 → 그 항목 Select → Password SetValue → Log In Invoke.
+    (목록엔 Admin·Operator 만 보여 doosan 은 고를 수 없음 — 이름을 입력해야 나옴)"""
+    w = ui.wrapper()
+    want = account.lower()
+    box = _acc_box(w)
+    ar = box.rectangle()
+    try:
+        if box.iface_expand_collapse.CurrentExpandCollapseState == 0:
+            box.iface_expand_collapse.Expand()
+    except Exception as e:  # noqa: BLE001
+        return f"Account 펼치기 실패 ({e})"
+    time.sleep(1.0)
+    ed = next((e for e in w.descendants(control_type="Edit") if e.element_info.rectangle.width() > 0
+               and abs(e.rectangle().top - ar.top) < 40 and ar.left - 5 <= e.rectangle().left <= ar.right), None)
+    if ed is None:
+        return "Account 를 펼쳤는데 이름 입력칸이 안 보임"
+    ed.iface_value.SetValue(account)
+    time.sleep(1.2)
+    it = next((e for e in w.descendants(control_type="ListItem") if e.element_info.rectangle.width() > 0
+               and re.fullmatch(rf"(?:\S\s+)?(?:\(\w+\)\s+)?{re.escape(want)}", (e.window_text() or "").strip().lower())), None)
+    if it is not None:
+        try:
+            it.iface_selection_item.Select()
+        except Exception:  # noqa: BLE001
+            it.click_input()
+        time.sleep(1.0)
+    if (_acc_box(w).window_text() or "").strip().lower() != want:
+        return f"Account 칸이 '{_acc_box(w).window_text()}' 로 남음 (목록 항목 {'있음' if it is not None else '없음'})"
+    pwd_lab = next(e for e in w.descendants(control_type="Text") if e.window_text() == "Password")
+    pwd = min((e for e in w.descendants(control_type="Edit") if e.rectangle().top > pwd_lab.rectangle().bottom - 5),
+              key=lambda e: e.rectangle().top)
+    pwd.iface_value.SetValue(pw or "")
+    time.sleep(0.5)
+    if len(pwd.iface_value.CurrentValue or "") != len(pw or ""):
+        return "비밀번호 칸에 값이 안 들어감"
+    next(b for b in w.descendants(control_type="Button") if b.window_text() == "Log In").iface_invoke.Invoke()
+    time.sleep(4)
+    if ui.wait_for(lambda: (ui.current_role() or "").lower() == want, 30):
+        return True
+    still = any(b.window_text() == "Log In" for b in w.descendants(control_type="Button"))
+    return "Log In 뒤에도 로그인 화면 그대로 (비밀번호 틀림?)" if still else f"Log In 뒤 계정 표시가 '{ui.current_role()}'"
+
+
 def login_screen(ui, account, pw):
     """PalletizOS 로그인 화면(Account 드롭다운 · Password · Log In)에서 account 로 로그인. 성공하면 True.
+    먼저 _login_by_value(백그라운드 값 입력), 안 되면 아래 앞 창 클릭·키 입력 방식."""
+    why = []
+    for i in range(3):  # 로그아웃 직후엔 로그인 화면이 덜 그려져 있을 수 있음 → 잠깐 기다렸다 다시
+        try:
+            r = _login_by_value(ui, account, pw)
+        except Exception as e:  # noqa: BLE001
+            r = f"{type(e).__name__}: {e}"[:120]
+        if r is True:
+            return True
+        why.append(f"{i + 1}차 {r}")
+        if "비밀번호 틀림" in str(r):
+            break
+        try:
+            ui.esc()
+        except Exception:  # noqa: BLE001
+            pass
+        time.sleep(3)
+    from autotest.events import ev
+    ev(f"{account} 로그인(값 입력 방식) 실패: " + " / ".join(why) + " → 키 입력 방식으로 시도")
+    return _login_by_keys(ui, account, pw)
+
+
+def _login_by_keys(ui, account, pw):
+    """(예전 방식) 앞 창으로 가져와 클릭·키 입력.
 
     Account 칸은 이름이 현재 계정인 버튼(드롭다운, 11-04 실측 'Button Admin'). ① 펼쳐서 목록의 account 항목 클릭
     ② 목록에 없으면 칸에 이름 입력 + Enter. 어느 쪽이든 칸 글자가 account 로 바뀐 것을 확인한 뒤에만 비밀번호 입력."""

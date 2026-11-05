@@ -491,6 +491,16 @@ def main():
     ap.add_argument("--mode", choices=["background", "mouse"], help="입력 방식 (기본: elements.yaml input_mode)")
     ap.add_argument("--no-update-check", action="store_true", help="시작 팝업(GitHub 신규 버전 확인) 생략 — 감시기가 설치 직후 띄울 때")
     a = ap.parse_args()
+    # 한 번에 하나만: 2026-11-05 13:10~13:13 R05 단독 실행과 전체 실행이 겹쳐 서로 앱을 껐다 켜 둘 다 실패.
+    # 이름 있는 뮤텍스는 프로세스가 죽으면 OS 가 자동으로 풀어 줌 (잠금 파일이 남는 문제 없음)
+    import ctypes
+    _mtx = ctypes.windll.kernel32.CreateMutexW(None, False, "Local\\PalletizOS_Smoke_Runner")
+    if ctypes.windll.kernel32.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
+        ev("실행 거부: 다른 자동화 실행이 아직 돌고 있음 (동시에 돌면 서로 앱을 껐다 켜서 둘 다 실패)")
+        print("\n 다른 자동화 실행이 아직 진행 중입니다. 끝난 뒤(완료 창이 뜬 뒤) 다시 실행하세요.\n")
+        time.sleep(8)
+        return
+    globals()["_RUNNER_MUTEX"] = _mtx  # 끝날 때까지 쥐고 있기
     expect = a.expect
     if not a.no_update_check and not a.only:
         expect = _update_check() or expect
