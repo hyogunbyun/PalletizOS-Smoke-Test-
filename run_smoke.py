@@ -781,12 +781,15 @@ def main():
     hist = json.loads(HISTORY.read_text(encoding="utf-8")) if HISTORY.exists() else []
     prev = next((h for h in reversed(hist) if h.get("palletizos_version")), None)
     if prev and prev.get("palletizos_version") == run.get("palletizos_version") \
-            and prev.get("platform_version") == run.get("platform_version"):
+            and prev.get("platform_version") == run.get("platform_version") \
+            and (prev.get("palletizos_build") == run.get("palletizos_build")  # 빌드까지 (11-06: -28→-29 를 '변경 없음'으로 표시)
+                 or not prev.get("palletizos_build") or not run.get("palletizos_build")):
         run["notes"].append(f"버전 변경 없음: 지난 실행({prev['started']})과 같은 버전 "
                             f"(PalletizOS {run.get('palletizos_version')}, Platform {run.get('platform_version')})")
     (outdir / "result.json").write_text(json.dumps(run, ensure_ascii=False, indent=1), encoding="utf-8")
     hist.append({"started": run["started"], "dir": outdir.name, "verdict": run["verdict"],
-                 "palletizos_version": run.get("palletizos_version"), "platform_version": run.get("platform_version"),
+                 "palletizos_version": run.get("palletizos_version"), "palletizos_build": run.get("palletizos_build"),
+                 "platform_version": run.get("platform_version"),
                  "flows": {r["tc"]: r["status"] for r in run["results"]}})
     HISTORY.write_text(json.dumps(hist[-50:], ensure_ascii=False, indent=1), encoding="utf-8")
 

@@ -517,7 +517,7 @@ def q01_quicklog(ctx):
 def v01_recovery(ctx):
     ui = ctx.ui
     base = ui.snapshot()
-    rec = ui.by_name("Recovery")
+    rec = ui.recovery_button()  # 2.0.0-29: 'Easy Recovery'
     if rec is None:
         r = ui.rail()
         rec = r[-2] if len(r) >= 2 else None

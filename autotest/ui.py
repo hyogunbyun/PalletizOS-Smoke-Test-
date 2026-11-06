@@ -761,9 +761,19 @@ class UI:
                 return t.window_text()
         return None
 
+    def recovery_button(self):
+        """좌측 하단 Recovery 버튼. 2.0.0-29 부터 이름이 'Easy Recovery' (2026-11-06 실측: 'Recovery' 로만 찾아
+        Enable 버튼·메뉴 위치를 못 잡아 H01·H07·H08·R01~R05 가 줄줄이 실패) → 후보 이름 목록 (elements.yaml palletizos.recovery)."""
+        names = P["recovery"] if isinstance(P["recovery"], list) else [P["recovery"]]
+        for n in names:
+            b = self.by_name(n)
+            if b is not None:
+                return b
+        return None
+
     def enable_button_name(self):
         """좌측 하단 Enable Robot 자리 버튼의 현재 이름 (누르면 바뀔 수 있음)."""
-        rec = self.by_name(P["recovery"])
+        rec = self.recovery_button()
         if rec is None:
             return None
         rr = rec.rectangle()
@@ -777,7 +787,7 @@ class UI:
         root = self.root()
         ver = next(t for t in root.children(control_type="Text") if re.fullmatch(VER_RE, t.window_text()))
         vr = ver.rectangle()
-        rec = self.by_name(P["recovery"])
+        rec = self.recovery_button()
         out = []
         for b in root.children(control_type="Button"):
             r = b.rectangle()
