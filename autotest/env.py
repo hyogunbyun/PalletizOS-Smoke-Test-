@@ -301,17 +301,20 @@ def _connect_manual(ui, log, on_connect):
     ip = PF["sim_ip"]
     for attempt in range(3):  # 입력칸이 다시 그려져 낡으면 새로 찾아 처음부터 (2026-11-02 08:22)
         time.sleep(1.0 if attempt else 0.5)
+        ui.wait_for(lambda: bool(edits()), 5)  # 다시 그려지는 중이면 빈 목록 → IndexError 로 실행 전체가 멈췄음 (11-09)
         es = edits()
         try:
+            if not es:
+                raise EnvError("IP 입력칸이 사라짐 (다시 그려지는 중)")
             if len(es) >= 4 and all(e.element_info.rectangle.top == es[0].element_info.rectangle.top for e in es[:4]):
                 for e, part in zip(es[:4], ip.split(".")):  # 옥텟 4칸 입력
                     ui.set_text(e, part, label=f"IP {part}")
             else:
                 ui.set_text(es[0], ip, label=f"IP {ip}")
             break
-        except EnvError as ex:
+        except (EnvError, IndexError, AssertionError) as ex:  # COM 오류·요소 낡음 포함
             if attempt == 2:
-                raise
+                raise EnvError(f"IP 입력 실패: {ex}")
             log(f"IP 입력 다시 시도 ({ex})")
     btn = ui.win_button(PF["connect"])
     if btn is None or not ui.wait_for(lambda: ui.win_button(PF["connect"]).is_enabled(), 8):
@@ -477,11 +480,22 @@ def _login_if_needed(ui, log, wait=20):
     if pw:
         log(f"PalletizOS 로그인 ({acct})")
         try:
-            if login_screen(ui, acct, pw):
+            # 앱을 막 켠 직후의 로그인 화면은 Account 칸이 펼쳐지지 않음 (2026-11-09 실측: 50초·12회 모두 0→0, 로그아웃 뒤
+            # 로그인 화면에선 정상) → 짧게만 시도하고, 안 되면 Operator 로 들어간 뒤 실행기가 Admin → 로그아웃 → acct 로 전환
+            if login_screen(ui, acct, pw, budget=10, keys=False):
                 return
         except Exception as e:  # noqa: BLE001
             log(f"  {acct} 로그인 실패: {e}")
     log("PalletizOS 로그인 (Operator)")
+    try:  # 기본 칸이 이미 Operator(비밀번호 없음)면 그냥 Log In
+        from tc_autotest.helpers import _acc_box
+        w = ui.wrapper()
+        if (_acc_box(w).window_text() or "").strip() == "Operator":
+            next(b for b in w.descendants(control_type="Button") if b.window_text() == "Log In").iface_invoke.Invoke()
+            if ui.wait_for(lambda: ui.win_button(button) is None, 20):
+                return
+    except Exception as e:  # noqa: BLE001
+        log(f"  Operator 바로 Log In 실패: {e}")
     try:
         if login_screen(ui, "Operator", ""):
             return

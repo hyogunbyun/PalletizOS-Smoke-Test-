@@ -142,13 +142,22 @@ def ensure_role(ctx, role):
     pw = secret.load(ACCOUNT_TARGET.get(role, ""))
     if not pw:
         raise NotApplicable(f"{role} 계정 비밀번호가 Windows 자격 증명에 없음")
-    ui.click(ui.acct_button(now) if now else ui.top_all("Button")[0], settle=2, label="계정 메뉴")
+    # 계정 메뉴가 늦게 뜨면 목록의 'A Admin' 을 못 보고 '목록에 없는 계정'으로 잘못 판단 → Operator 인 채로 Settings 를 찾다 실패
+    # (2026-11-09 앱 재시작 직후 재현) → 메뉴(Change Account·계정 목록)가 뜰 때까지 기다리고, 안 뜨면 한 번 더 누름
+    menu_open = lambda: "Change Account" in ui.top_names() or ui.acct_button(role) is not None  # noqa: E731
+    for _ in range(2):
+        ui.click(ui.acct_button(now) if now else ui.top_all("Button")[0], settle=1.5, label="계정 메뉴")
+        if ui.wait_for(menu_open, 5):
+            break
+    ui.wait_for(lambda: ui.acct_button(role) is not None, 2)
     tgt = ui.acct_button(role)
     if tgt is None:  # Change Account 목록에 없는 계정(doosan 등) → 로그아웃 후 로그인 화면에서 계정 이름을 직접 입력
         ui.esc()
         if now not in ("Admin", "doosan") and role != "Admin":
             # Operator 등엔 Settings(로그아웃 버튼)가 없음 → 먼저 Admin 으로 (11-02: 앱 재시작 후 기본 계정 Operator 로 들어와 막힘)
             ensure_role(ctx, "Admin")
+            if ui.current_role() != "Admin":
+                raise EnvError(f"Admin 으로 바뀌지 않음 (지금 {ui.current_role()}) — Operator 엔 로그아웃(Settings)이 없어 {role} 로 못 감")
         login_typed(ctx, role, pw)
         return
     ui.click(tgt, settle=2, label=f"계정 {role}")
@@ -320,10 +329,12 @@ def _login_by_value(ui, account, pw):
             box.iface_expand_collapse.Expand()
     except Exception as e:  # noqa: BLE001
         return f"Account 펼치기 실패 ({e})"
+    # 앱을 막 켠 직후엔 펼친 목록이 3~4초 뒤 저절로 닫힘 (2026-11-09 실측: Expand → 상태 1 → +4초 0)
+    # → 펼침·이름 입력·선택을 짧은 간격(0.2초)으로 몰아서 끝낸다. 늦으면 '칸이 Operator 로 남음'으로 실패했었음
     ed = None
-    t_end = time.time() + 4  # 앱을 막 켠 직후엔 펼침 반응이 늦음 (2026-11-05 14:46·15:26 재시작 직후 실패)
+    t_end = time.time() + 4
     while ed is None and time.time() < t_end:
-        time.sleep(0.5)
+        time.sleep(0.2)
         ed = next((e for e in w.descendants(control_type="Edit") if near(e)), None)
     if ed is None:
         try:
@@ -335,15 +346,19 @@ def _login_by_value(ui, account, pw):
         return (f"Account 를 펼쳤는데 이름 입력칸이 안 보임 (펼침 상태 {st0}→{st1}, 칸 '{box.window_text()}' "
                 f"{ar.width()}x{ar.height()}, 보이는 입력칸(칸 기준 x,y) {eds[:4]})")
     ed.iface_value.SetValue(account)
-    time.sleep(1.2)
-    it = next((e for e in w.descendants(control_type="ListItem") if e.element_info.rectangle.width() > 0
-               and re.fullmatch(rf"(?:\S\s+)?(?:\(\w+\)\s+)?{re.escape(want)}", (e.window_text() or "").strip().lower())), None)
+    pat = re.compile(rf"(?:\S\s+)?(?:\(\w+\)\s+)?{re.escape(want)}")
+    it = None
+    t_end = time.time() + 3
+    while it is None and time.time() < t_end:
+        time.sleep(0.2)
+        it = next((e for e in w.descendants(control_type="ListItem") if e.element_info.rectangle.width() > 0
+                   and pat.fullmatch((e.window_text() or "").strip().lower())), None)
     if it is not None:
         try:
             it.iface_selection_item.Select()
         except Exception:  # noqa: BLE001
             it.click_input()
-        time.sleep(1.0)
+        time.sleep(0.8)
     if (_acc_box(w).window_text() or "").strip().lower() != want:
         return f"Account 칸이 '{_acc_box(w).window_text()}' 로 남음 (목록 항목 {'있음' if it is not None else '없음'})"
     pwd_lab = next(e for e in w.descendants(control_type="Text") if e.window_text() == "Password")
@@ -361,11 +376,14 @@ def _login_by_value(ui, account, pw):
     return "Log In 뒤에도 로그인 화면 그대로 (비밀번호 틀림?)" if still else f"Log In 뒤 계정 표시가 '{ui.current_role()}'"
 
 
-def login_screen(ui, account, pw):
+def login_screen(ui, account, pw, budget=45, keys=True):
     """PalletizOS 로그인 화면(Account 드롭다운 · Password · Log In)에서 account 로 로그인. 성공하면 True.
     먼저 _login_by_value(백그라운드 값 입력), 안 되면 아래 앞 창 클릭·키 입력 방식."""
     why = []
-    for i in range(3):  # 로그아웃 직후엔 로그인 화면이 덜 그려져 있을 수 있음 → 잠깐 기다렸다 다시
+    t_end = time.time() + budget  # 앱 재시작 직후엔 로그인 화면이 한동안 다시 그려짐 → 안정될 때까지 반복 (2026-11-09)
+    for i in range(12):
+        if i and time.time() > t_end:
+            break
         try:
             r = _login_by_value(ui, account, pw)
         except Exception as e:  # noqa: BLE001
@@ -375,14 +393,16 @@ def login_screen(ui, account, pw):
         why.append(f"{i + 1}차 {r}")
         if "비밀번호 틀림" in str(r):
             break
-        try:
-            ui.esc()
+        try:  # 펼쳐진 채 남았으면 접고 다시 (ESC 는 창이 뒤에 있으면 안 먹음)
+            bx = _acc_box(ui.wrapper())
+            if bx.iface_expand_collapse.CurrentExpandCollapseState == 1:
+                bx.iface_expand_collapse.Collapse()
         except Exception:  # noqa: BLE001
             pass
         time.sleep(3)
     from autotest.events import ev
-    ev(f"{account} 로그인(값 입력 방식) 실패: " + " / ".join(why) + " → 키 입력 방식으로 시도")
-    return _login_by_keys(ui, account, pw)
+    ev(f"{account} 로그인(값 입력 방식) 실패: " + " / ".join(why) + (" → 키 입력 방식으로 시도" if keys else ""))
+    return _login_by_keys(ui, account, pw) if keys else False
 
 
 def _login_by_keys(ui, account, pw):

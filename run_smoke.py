@@ -419,12 +419,28 @@ def run_flow(f, ctx, outdir):
             ev(f"{f['tc']} 시도{attempt}: " + ("앱이 이미 꺼져 있었음(외부에서 닫힘 의심)" if gone else
                                               f"원상복구 실패 → 실행기가 앱 강제 종료·재시작 (원인: {why[:120]})"))
             env.kill_app()
-            env.ensure_ready(ui, env_log)
+            try:
+                env.ensure_ready(ui, env_log)
+            except UserInterference:
+                raise
+            except Exception as e_up:  # 재시작 직후 제어기 연결 단계가 가끔 실패 (11-09 IP 입력칸 사라짐) → 한 번 더 껐다 켬
+                ev(f"{f['tc']}: 앱 재시작 뒤 준비 실패({str(e_up)[:80]}) → 한 번 더 껐다 켬")
+                env.kill_app()
+                time.sleep(10)
+                env.ensure_ready(ui, env_log)
             if getattr(ctx, "admin_ok", False) and ui.current_role() != secret.LOGIN_ACCOUNT:
                 try:  # 재시작하면 기본 계정(Operator)으로 로그인됨 → Admin 메뉴 항목이 계속 실패하지 않게 다시 전환
                     _work_login(ctx)
                 except Exception as e2:
-                    rec["restore"] += f" / Admin 재로그인 실패 ({e2})"
+                    time.sleep(5)
+                    try:  # 재시작 직후엔 화면이 덜 안정됨 → 한 번 더
+                        _work_login(ctx)
+                        rec["restore"] += f" / {secret.LOGIN_ACCOUNT} 재로그인 2번째에 성공"
+                    except Exception as e3:
+                        rec["restore"] += f" / {secret.LOGIN_ACCOUNT} 재로그인 실패 ({e3 or e2})"
+                        ctx.admin_ok = False
+                        ctx.admin_err = f"앱 재시작 뒤 {secret.LOGIN_ACCOUNT} 로 되돌리지 못함: {e3 or e2}"
+                        ev(f"{f['tc']}: {ctx.admin_err} → 남은 Admin 항목은 다른 계정으로 돌리지 않고 '실행 안 함' 처리")
             try:
                 ctx.restore_all()
             except Exception as e2:
@@ -432,6 +448,8 @@ def run_flow(f, ctx, outdir):
         attempts.append(rec)
         log(f"  {f['tc']} 시도{attempt}: {rec['status']} {rec['msg'][:120]}")
         if rec["status"] != "fail":
+            break
+        if f["admin"] and not ctx.admin_ok:  # 재시작 뒤 계정을 못 되돌림 → 다른 계정으로 2차 시도하지 않음
             break
 
     last = attempts[-1]
@@ -654,9 +672,26 @@ def main():
             LIVE.set_chip(f["tc"], "run")
             CUR["tc"], CUR["t0"] = f["tc"], time.time()
             try:
+                # 항목마다 계정 확인: 앱이 강제 종료·재시작돼 다른 계정(Operator 등)으로 들어와 있으면 시작 계정으로 되돌리고 이어서
+                # (2026-11-09 사용자 요청 — 08:40 K05 재시작 뒤 K06~C04 가 Operator 로 돌아 가짜 실패)
+                if ctx.admin_ok and env.app_running():
+                    try:
+                        now_role = ui.current_role()
+                    except Exception:  # noqa: BLE001
+                        now_role = None
+                    if now_role and now_role != secret.LOGIN_ACCOUNT:
+                        ev(f"{f['tc']} 시작 전: 계정이 '{now_role}' 로 바뀌어 있음 → {secret.LOGIN_ACCOUNT} 로 다시 로그인")
+                        log(f"  계정 '{now_role}' → {secret.LOGIN_ACCOUNT} 로 되돌림")
+                        try:
+                            _work_login(ctx)
+                        except Exception as e:  # noqa: BLE001
+                            ctx.admin_ok = False
+                            admin_err = f"앱 재시작 뒤 {secret.LOGIN_ACCOUNT} 로 되돌리지 못함: {e}"
+                            ev(f"{f['tc']} 시작 전: {admin_err} → 남은 Admin 항목은 다른 계정으로 돌리지 않고 '실행 안 함' 처리")
+                            run["notes"].append(admin_err)
                 if f["admin"] and not ctx.admin_ok:
                     res = {"tc": f["tc"], "title": f["title"], "desc": f["desc"], "status": "env",
-                           "msg": f"Admin 계정이 필요함 ({admin_err})", "attempts": [], "new_errors": {}, "sec": 0}
+                           "msg": f"Admin 계정이 필요함 ({getattr(ctx, 'admin_err', None) or admin_err})", "attempts": [], "new_errors": {}, "sec": 0}
                 elif a.repeat > 1:
                     res = _run_repeat(f, ctx, outdir, a.repeat, run)
                 else:

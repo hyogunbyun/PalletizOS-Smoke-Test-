@@ -516,6 +516,20 @@ class UI:
         b = self.top_find(name)
         if b is None and self.expand_nav():
             b = self.top_find(name)
+        if b is None:
+            # 계정이 바뀌면 메뉴 구성이 달라짐(Operator 엔 Settings 없음) → 예전 계정 기준 메뉴 순서로 찾다 실패
+            # (2026-11-09 08:42 재시작 뒤 Operator→Admin 전환 후 'Settings 메뉴 순서 미확인') → 지금 메뉴로 다시 읽고 한 번 더
+            # 계정을 막 바꾼 직후엔 메뉴가 몇 초 뒤에 새로 그려짐 (2026-11-09 09:11 재시작 → Operator→Admin 직후 Settings 없음,
+            # 같은 동작을 천천히 하면 정상) → 최대 6초 기다리며 다시 찾음
+            found = []
+            self.wait_for(lambda: found.append(self.top_find(name)) or found[-1] is not None, 6)
+            b = found[-1] if found else None
+            try:
+                self.remember_nav()
+            except Exception:  # noqa: BLE001
+                pass
+            if b is None:
+                b = self.top_find(name)
         if b is not None and b.rectangle().right < self.wrapper().rectangle().left + 300:
             self.click(b, settle=settle, label=f"메뉴 {name}")
             return
