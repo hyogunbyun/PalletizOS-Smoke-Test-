@@ -28,6 +28,9 @@ ALLOW = set(CFG.get("allow", []))
 CLOSERS = CFG.get("close_buttons", ["Cancel", "Close", "No", "Discard", "취소", "닫기", "아니오"])
 MAX_DEPTH = int(CFG.get("max_depth", 2))
 MAX_CLICKS = int(CFG.get("max_clicks", 150))
+# 같은 모양(종류·이름·크기)이 여러 개면 앞의 몇 개만 누름 — 목록 칸·아이콘 줄을 다 누르느라 K01 한 항목 7분 (2026-11-09 사용자 요청: 최소화)
+SAME_MAX = int(CFG.get("same_kind_max", 2))
+SETTLE = float(CFG.get("settle", 0.7))
 CLICKABLE = ("Button", "TabItem", "CheckBox", "RadioButton", "ListItem", "Hyperlink", "SplitButton", "ComboBox")
 DYN_DENY = set()  # 실행 중 파일·시스템 창을 띄운 버튼 (메뉴, key) — 같은 실행에서 다시 누르지 않음
 ROLE = re.compile(P.get("nav_role_pattern", r"^[A-Z] \w+$"))
@@ -78,6 +81,11 @@ def _elements_once(ui):
         count[k] = count.get(k, -1) + 1
         out.append(((k[0], k[1], count[k]), e))
     return out
+
+
+def _shape(e):
+    r = e.element_info.rectangle
+    return (e.element_info.control_type, _nm(e), round(r.width() / 6), round(r.height() / 6))
 
 
 def _find(ui, key):
@@ -166,6 +174,8 @@ class Crawler:
         # Imperial로 '원복'해 단위가 바뀐 채 남았고, 저장 안 된 변경 때문에 Settings를 못 나가 앱 재시작 — 2026-10-22 15:23)
         self.radio_orig = [k for k, x in els if k[0] == "RadioButton" and _is_selected(x)]
         self.ctx.step(f"{where}: 요소 {len(keys)}개")
+        seen_shape = {}
+        cur = dict(els)  # 화면이 바뀌지 않았으면 다시 읽지 않음 (매 클릭마다 전체 트리를 두 번 읽던 비용 제거)
         for key in keys:
             if self.clicks >= MAX_CLICKS:
                 self.rows.append((where, "-", f"상한 {MAX_CLICKS}회 도달 → 나머지 생략"))
@@ -185,14 +195,31 @@ class Crawler:
             try:
                 if _sim(ui.top_names(), base) < 0.7:  # 앞 클릭 때문에 화면이 바뀌어 있으면 다시 열기
                     self.open(path)
-                e = _find(ui, key)
+                    cur = dict(_elements(ui))
+                e = cur.get(key)
+                if e is not None:
+                    try:
+                        e.element_info.rectangle  # 아직 살아 있는 요소인지
+                    except Exception:
+                        e = None
+                if e is None:
+                    cur = dict(_elements(ui))
+                    e = cur.get(key)
                 if e is None:
                     self.rows.append((where, _label(key), "다시 찾지 못함 (화면 변화)"))
                     continue
                 if not e.is_enabled():
                     self.rows.append((where, _label(key), "비활성 (누르지 않음)"))
                     continue
+                sh = _shape(e)
+                seen_shape[sh] = seen_shape.get(sh, 0) + 1
+                if seen_shape[sh] > SAME_MAX:
+                    self.rows.append((where, _label(key), f"건너뜀 (같은 모양 반복 — 앞 {SAME_MAX}개만 누름)"))
+                    continue
+                n0 = len(self.rows)
                 self.press(where, path, key, e, base, queue)
+                if not (len(self.rows) > n0 and "변화 없음" in self.rows[-1][2]):
+                    cur = dict(_elements(ui))  # 화면에 변화가 있었으면 다시 읽기
             except COMError as ex:
                 # 화면이 다시 그려지는 순간 UIA 호출 1번이 앱에 안 닿음(-2147220991) — 예전엔 항목 전체가 실패하고 처음부터 다시 돎
                 # (2026-11-05 K01·K07 시도마다 2~6분 버림) → 이 버튼만 건너뛰고 계속
@@ -204,7 +231,7 @@ class Crawler:
         before_txt, tog, layers0 = ui.window_texts(), _toggle_state(e), len(ui.top_layers())
         self.ctx.step(f"{where}: {_label(key)} 누르기 ({self.clicks + 1})")
         try:
-            ui.click(e, settle=1.0, label=f"[{self.menu}] {_label(key)}")
+            ui.click(e, settle=SETTLE, label=f"[{self.menu}] {_label(key)}")
         except AssertionError as ex:
             self.rows.append((where, _label(key), f"누를 수 없음 ({str(ex)[:60]})"))
             return
@@ -251,7 +278,7 @@ class Crawler:
         if tog is not None and key[0] == "CheckBox":
             x = _find(ui, key)
             if x is not None and _toggle_state(x) != tog:
-                ui.click(x, settle=1.0, label=f"원래대로 {_label(key)}")
+                ui.click(x, settle=SETTLE, label=f"원래대로 {_label(key)}")
                 result += " · 원복"
         if key[0] == "RadioButton":
             if not getattr(self, "radio_orig", None):
@@ -259,7 +286,7 @@ class Crawler:
             for rk in self.radio_orig:
                 x = _find(ui, rk)
                 if x is not None and not _is_selected(x):
-                    ui.click(x, settle=1.0, label=f"원래 선택 {_label(rk)}")
+                    ui.click(x, settle=SETTLE, label=f"원래 선택 {_label(rk)}")
                     result += f" · 원복({rk[1]})"
         self.rows.append((where, _label(key), result))
 
