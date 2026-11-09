@@ -2,7 +2,7 @@
 
 사용법:
   python run_smoke.py               # 전체 실행
-  python run_smoke.py --ask         # 시작 시 기대 버전 입력 (엔터 = 생략)
+  python run_smoke.py --ask         # (기대 버전 입력은 2026-11-09부터 생략, 버전은 앱 로그에서 자동)
   python run_smoke.py --expect 1.1.0
   python run_smoke.py --only P04 P05
 """
@@ -104,7 +104,7 @@ def _partial_report(why, final=False, open_=False):
             r["notes"] = [f"진행 중 — {len(done)} / {len(CUR['flows'])}개 완료 (30초마다 새로 고침)"] + r.get("notes", [])
         hist = json.loads(HISTORY.read_text(encoding="utf-8")) if HISTORY.exists() else []
         hist.append({"started": r["started"], "dir": outdir.name, "verdict": r["verdict"],
-                     "palletizos_version": r.get("palletizos_version"), "platform_version": r.get("platform_version"),
+                     "palletizos_version": r.get("palletizos_version"), "palletizos_build": r.get("palletizos_build"), "platform_version": r.get("platform_version"),
                      "flows": {x["tc"]: x["status"] for x in r["results"]}})
         if final:
             (outdir / "result.json").write_text(json.dumps(r, ensure_ascii=False, indent=1), encoding="utf-8")
@@ -570,8 +570,7 @@ def main():
     expect = a.expect
     if not a.no_update_check and not a.only:
         expect = _update_check() or expect
-    if a.ask and not expect:
-        expect = input("이번에 설치한 PalletizOS 버전 (예: 1.1.0, 엔터 = 생략): ").strip() or None
+    # 기대 버전 입력 창은 묻지 않고 바로 생략 (2026-11-09 사용자 요청) — 시험한 빌드는 앱 로그에서 자동으로 읽어 리포트에 명기
 
     started = datetime.now()
     outdir = RESULTS / started.strftime("%Y%m%d_%H%M%S")
@@ -608,6 +607,11 @@ def main():
         guard.start()
     run = {"started": started.isoformat(timespec="seconds"), "expect_version": expect,
            "platform_version": env.platform_version(), "results": [], "notes": []}
+    try:  # 화면은 v2.0.0 까지만 보여 줌 → 시험한 빌드(2.0.0-30)는 앱 로그에서 읽어 리포트에 표시 (2026-11-09 사용자 요청)
+        from autotest.installer import installed_version
+        run["palletizos_build"] = installed_version()
+    except Exception:  # noqa: BLE001
+        pass
     CUR.update(run=run, ctx=ctx, flows=flows, outdir=outdir, expect=expect)
     _watch_hung_stop()
     try:

@@ -128,7 +128,7 @@ def write_report(run, outdir: Path, hist):
     for h in reversed(hist[-10:]):
         dots = "".join(f'<span class="dot {LABEL.get(h["flows"].get(t), ("", "na"))[1]}" title="{t}"></span>' for t in tcs)
         hrows.append(f'<tr><td>{_e(h["started"].replace("T", " "))}</td><td><span class="chip {VERDICT_CLS.get(h["verdict"], "na")}">'
-                     f'{_e(h["verdict"])}</span></td><td>{_e(h.get("palletizos_version"))} / {_e(h.get("platform_version"))}</td>'
+                     f'{_e(h["verdict"])}</span></td><td>{_e(h.get("palletizos_build") or h.get("palletizos_version"))} / {_e(h.get("platform_version"))}</td>'
                      f'<td>{dots}</td></tr>')
 
     counts = {}
@@ -157,11 +157,11 @@ def write_report(run, outdir: Path, hist):
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>{PAGE_TITLE}</title>
 {'<meta http-equiv="refresh" content="30">' if v == "진행 중" else ""}
 <style>{CSS}</style></head><body data-run="{_e(outdir.name)}"><main>
-<h1>{TITLE}</h1>
+<h1>{TITLE}{(" · " + _e(run["palletizos_build"])) if run.get("palletizos_build") else ""}</h1>
 <div class="sub">{_e(run["started"].replace("T", " "))} ~ {_e((run.get("finished") or "진행 중")[11:] or "진행 중")} · 가상 제어기 127.0.0.1 (dev-simulator)</div>
 <div class="hero"><span class="badge {VERDICT_CLS.get(v, 'na')}">{_e(v)}</span>
 <div class="meta">
-<div><b>PalletizOS (화면)</b>{_e(run.get("palletizos_version", "-"))}</div>
+<div><b>시험한 PalletizOS 버전</b>{_e(run.get("palletizos_build") or run.get("palletizos_version", "-"))}</div>
 <div><b>Dr.Dart-Platform (설치)</b>{_e(run.get("platform_version", "-"))}</div>
 <div><b>기대 버전</b>{_e(run.get("expect_version") or "입력 안 함")}</div>
 <div><b>결과</b>{_e(summary)}</div>

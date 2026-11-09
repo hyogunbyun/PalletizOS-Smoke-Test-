@@ -75,6 +75,11 @@ def p01_entry(ctx):
     ver = ui.version()
     check(ver and re.fullmatch(r"v\d+\.\d+\.\d+", ver), f"PalletizOS 버전 표시 없음: {ver!r}")
     ctx.info["palletizos_version"] = ver
+    try:  # 기대 버전을 안 넣어도 시험한 빌드 번호는 항상 기록 (리포트 표시용)
+        from .installer import installed_version
+        ctx.info["palletizos_build"] = installed_version() or ctx.info.get("palletizos_build")
+    except Exception:  # noqa: BLE001
+        pass
     if ctx.expect_version:
         want = ctx.expect_version if ctx.expect_version.startswith("v") else "v" + ctx.expect_version
         # 화면은 'v2.0.0' 까지만 표시하고 데일리 빌드 번호(-23)는 없음 → 화면은 앞부분만 비교하고, 빌드 번호는 앱 로그로 확인
