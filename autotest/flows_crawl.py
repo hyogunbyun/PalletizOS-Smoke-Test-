@@ -20,7 +20,7 @@ from comtypes import COMError
 
 from . import env
 from .flows import SHORT, NotApplicable, check, flow
-from .ui import EL, P
+from .ui import EL, EnvError, P
 
 CFG = EL.get("crawl", {})
 DENY = [re.compile(p, re.I) for p in CFG.get("deny", [])]
@@ -157,6 +157,7 @@ class Crawler:
                 except AssertionError:
                     pass
             ui.esc()
+        ui._close_menus_raw()  # ⋮ 메뉴처럼 ESC 로 안 닫히는 드롭다운 (2026-11-11 K05 Tool ⋮ 가 열린 채 남아 앱 재시작)
         return _sim(ui.top_names(), base) > 0.85
 
     # ---------- 한 화면 점검 ----------
@@ -225,6 +226,20 @@ class Crawler:
                 # (2026-11-05 K01·K07 시도마다 2~6분 버림) → 이 버튼만 건너뛰고 계속
                 self.rows.append((where, _label(key), f"건너뜀 (UIA 통신 일시 실패 {ex.args[0] if ex.args else ''})"))
                 time.sleep(1.0)
+            except EnvError as ex:
+                # 누른 버튼이 띄운 메뉴(K05 Tool ⋮)가 화면을 덮어 PalletizOS 화면을 잃음 — 예전엔 항목 실패 → 원상복구 실패
+                # → 앱 강제 재시작 → Operator 로 다시 떠서 Admin 경유 doosan 재로그인 (2026-11-11 09:14·09:39)
+                # → 메뉴를 닫고 이 버튼은 이후 누르지 않은 채 계속. 그래도 화면을 못 찾으면 그때 실패
+                ui._close_menus_raw()
+                try:
+                    ui.esc()
+                except EnvError:
+                    from .winutil import post_key
+                    post_key(ui.hwnd(), 0x1B)  # root() 없이 ESC 만
+                    time.sleep(1.0)
+                DYN_DENY.add((self.menu, key))
+                self.rows.append((where, _label(key), f"누른 뒤 화면을 잃음 → 메뉴 닫고 계속 (이 버튼은 이후 누르지 않음) ({ex})"))
+                self.open(path)
 
     def press(self, where, path, key, e, base, queue):
         ui = self.ui

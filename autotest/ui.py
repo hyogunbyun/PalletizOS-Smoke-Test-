@@ -362,15 +362,20 @@ class UI:
     def root(self):
         """PalletizOS 영역 = 'v1.1.0' 버전 텍스트의 부모 그룹. 뒤에 깔린 Platform 화면과 분리한다."""
         # 상위 계정(Internal 등)은 빌드 번호까지 'v2.0.0-25' 로 표시함 (2026-11-02 doosan 로그인 실측) → 둘 다 인정
-        for attempt in (1, 2):
+        for attempt in (1, 2, 3):
             for t in self.win.descendants(control_type="Text"):
                 if re.fullmatch(VER_RE, t.window_text() or ""):
                     return t.parent()
             # 버전 글자는 펼친 왼쪽 메뉴에만 보임 → 메뉴가 접혀 있으면 Home 이 멀쩡해도 여기서 실패해 앱을 강제 재시작했음
             # (2026-11-05 K01 15:10 스크린샷: Home 정상). 한 번 펼치고 다시 봄
-            if attempt == 1 and not getattr(self, "_in_root_expand", False):
+            if attempt <= 2 and not getattr(self, "_in_root_expand", False):
                 self._in_root_expand = True
                 try:
+                    # 열린 드롭다운 메뉴(K05 Tool ⋮ → Add/Import/Export/Delete)가 화면을 덮고 있으면 버전 글자를 못 찾아
+                    # 원상복구 실패 → 앱 강제 재시작 → Operator 로 다시 뜸 → Admin 경유 doosan 재로그인 (2026-11-11 09:14)
+                    # → 메뉴부터 닫고 다시 본다
+                    if self._close_menus_raw():
+                        continue
                     if not self.expand_nav():
                         break
                 except Exception:  # noqa: BLE001
@@ -378,6 +383,40 @@ class UI:
                 finally:
                     self._in_root_expand = False
         raise EnvError("PalletizOS 화면이 열려 있지 않음")
+
+    def _close_menus_raw(self):
+        """root() 없이 창 전체에서 열린 MenuItem 을 찾아 닫는다. 닫았으면 True."""
+        def has_menu():
+            try:
+                return bool(self.win.descendants(control_type="MenuItem"))
+            except Exception:  # noqa: BLE001
+                return False
+        if not has_menu():
+            return False
+        for _ in range(3):
+            if _LAST_EXPANDED["ec"] is not None:
+                try:
+                    uiafast.invalidate()
+                    _LAST_EXPANDED["ec"].Collapse()
+                    uiafast.invalidate()
+                except Exception:  # noqa: BLE001
+                    pass
+                pause(0.8)
+                if not has_menu():
+                    return True
+            try:
+                if self.mode == "background":
+                    from .winutil import post_key
+                    post_key(self.hwnd(), 0x1B)
+                else:
+                    from pywinauto import keyboard
+                    keyboard.send_keys("{ESC}")
+            except Exception:  # noqa: BLE001
+                pass
+            pause(1.0)
+            if not has_menu():
+                return True
+        return not has_menu()
 
     def version(self):
         """화면 버전 'v2.0.0' (빌드 번호 표시 계정이면 앞부분만)."""
